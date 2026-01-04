@@ -1,0 +1,314 @@
+import { useState, useEffect, useRef } from "react";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import { Link } from "react-router-dom";
+
+export default function OrganizerDashboard() {
+    const [showNotifications, setShowNotifications] = useState(false);
+    const notificationRef = useRef(null);
+
+    // Close notification popup on outside click
+    useEffect(() => {
+        function handleClickOutside(e) {
+            if (
+                notificationRef.current &&
+                !notificationRef.current.contains(e.target)
+            ) {
+                setShowNotifications(false);
+            }
+        }
+
+        if (showNotifications) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [showNotifications]);
+
+    return (
+        <>
+            <Navbar />
+
+            <main className="pt-20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+                    {/* ================= HEADER ================= */}
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">
+                                Organizer Dashboard
+                            </h1>
+                            <p className="text-gray-600 mt-2">
+                                Manage your events and track performance
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-4 relative">
+                            {/* Notification Bell */}
+                            <button
+                                onClick={() => setShowNotifications(v => !v)}
+                                className="relative p-2 text-gray-600 hover:text-gray-900"
+                            >
+                                <i className="ri-notification-line text-xl"></i>
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                    2
+                                </span>
+                            </button>
+
+                            {/* Notification Popup */}
+                            {showNotifications && (
+                                <div
+                                    ref={notificationRef}
+                                    className="absolute right-0 top-12 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+                                >
+                                    <div className="p-4 border-b border-gray-200">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="font-semibold text-gray-900">
+                                                Notifications
+                                            </h3>
+                                            <button className="text-sm text-purple-600">
+                                                Mark all read
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="max-h-64 overflow-y-auto">
+                                        {[
+                                            ["New booking for Summer Music Festival", "2 minutes ago", true],
+                                            ["Event Tech Conference approved", "1 hour ago", true],
+                                            ["Art Gallery Opening starts soon", "3 hours ago", false],
+                                        ].map(([text, time, unread]) => (
+                                            <div
+                                                key={text}
+                                                className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${unread ? "bg-purple-50" : ""
+                                                    }`}
+                                            >
+                                                <div className="flex items-start">
+                                                    <div
+                                                        className={`w-2 h-2 rounded-full mt-2 mr-3 ${unread
+                                                                ? "bg-purple-500"
+                                                                : "bg-gray-400"
+                                                            }`}
+                                                    ></div>
+                                                    <div>
+                                                        <p className="text-sm text-gray-900">
+                                                            {text}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            {time}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Create Event */}
+                            <Link to="/create-event">
+                                <button className="bg-linear-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition">
+                                    <i className="ri-add-line mr-2"></i>
+                                    Create Event
+                                </button>
+                            </Link>
+                        </div>
+                    </div>
+
+                    {/* ================= STATS ================= */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        {[
+                            ["Total Events", "4", "ri-calendar-event-line", "blue"],
+                            ["Total Attendees", "1640", "ri-group-line", "green"],
+                            ["Total Revenue", "$39,600", "ri-money-dollar-circle-line", "purple"],
+                            ["Page Views", "12,543", "ri-eye-line", "orange"],
+                        ].map(([label, value, icon, color]) => (
+                            <div key={label} className="bg-white border rounded-lg p-6">
+                                <div className="flex items-center">
+                                    <div className={`w-12 h-12 bg-${color}-100 rounded-lg flex items-center justify-center mr-4`}>
+                                        <i className={`${icon} text-xl text-${color}-600`}></i>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-600">{label}</p>
+                                        <p className="text-2xl font-bold text-gray-900">{value}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* ================= MAIN GRID ================= */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                        {/* ===== LEFT ===== */}
+                        <div className="lg:col-span-2">
+
+                            {/* Quick Actions */}
+                            <div className="bg-white border rounded-lg p-6 mb-8">
+                                <h2 className="text-lg font-semibold mb-4">
+                                    Quick Actions
+                                </h2>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {[
+                                        ["Create Event", "ri-add-circle-line", "purple", "/create-event"],
+                                        ["Analytics", "ri-bar-chart-line", "blue", "/analytics"],
+                                        ["Attendees", "ri-group-line", "green", "/attendees"],
+                                        ["Settings", "ri-settings-line", "gray", "/settings"],
+                                    ].map(([label, icon, color, link]) => (
+                                        <Link
+                                            key={label}
+                                            to={link}
+                                            className={`flex flex-col items-center p-4 bg-${color}-50 rounded-lg hover:bg-${color}-100`}
+                                        >
+                                            <i className={`${icon} text-2xl text-${color}-600 mb-2`}></i>
+                                            <span className={`text-sm font-medium text-${color}-700`}>
+                                                {label}
+                                            </span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* My Events */}
+                            <div className="bg-white border rounded-lg overflow-hidden">
+                                <div className="p-6 border-b">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-lg font-semibold">
+                                            My Events
+                                        </h2>
+
+                                        <div className="flex gap-4">
+                                            <select className="px-3 py-2 border rounded-lg text-sm">
+                                                <option>All Status</option>
+                                                <option>Published</option>
+                                                <option>Draft</option>
+                                                <option>Cancelled</option>
+                                            </select>
+
+                                            <select className="px-3 py-2 border rounded-lg text-sm">
+                                                <option>Sort by Date</option>
+                                                <option>Title</option>
+                                                <option>Attendees</option>
+                                                <option>Revenue</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="divide-y">
+                                    {[
+                                        ["Tech Innovation Conference 2024", "draft", "180", "$12,300"],
+                                        ["Art Gallery Opening Night", "published", "120", "$3,200"],
+                                        ["Marathon Championship 2024", "published", "890", "$15,600"],
+                                        ["Summer Music Festival 2024", "published", "450", "$8,500"],
+                                    ].map(([title, status, attendees, revenue]) => (
+                                        <div key={title} className="p-6 hover:bg-gray-50 flex justify-between">
+                                            <div>
+                                                <h3 className="font-medium text-lg">{title}</h3>
+
+                                                {/* STATUS USED (warning fixed) */}
+                                                <span
+                                                    className={`inline-block mt-1 px-3 py-1 text-xs rounded-full ${status === "published"
+                                                            ? "bg-green-100 text-green-700"
+                                                            : "bg-yellow-100 text-yellow-700"
+                                                        }`}
+                                                >
+                                                    {status}
+                                                </span>
+
+                                                <p className="text-sm text-gray-500 mt-2">
+                                                    <i className="ri-group-line mr-1"></i>
+                                                    {attendees} attendees
+                                                </p>
+                                                <p className="text-green-600 font-medium">{revenue}</p>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <button className="border-2 border-purple-600 text-purple-600 px-4 py-2 rounded-lg text-sm hover:bg-purple-600 hover:text-white">
+                                                    <i className="ri-edit-line mr-1"></i>Edit
+                                                </button>
+                                                <button className="border-2 border-purple-600 text-purple-600 px-4 py-2 rounded-lg text-sm hover:bg-purple-600 hover:text-white">
+                                                    <i className="ri-eye-line mr-1"></i>View
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ===== RIGHT SIDEBAR (UNCHANGED) ===== */}
+                        <div className="space-y-6">
+                            {/* Notifications */}
+                            <div className="bg-white border rounded-lg p-6">
+                                <div className="flex justify-between mb-4">
+                                    <h3 className="text-lg font-semibold">
+                                        Notifications
+                                    </h3>
+                                    <button className="text-sm text-purple-600">
+                                        Mark all read
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {[
+                                        ["New booking for Summer Music Festival", "2 minutes ago"],
+                                        ["Event Tech Conference approved", "1 hour ago"],
+                                        ["Art Gallery Opening starts soon", "3 hours ago"],
+                                    ].map(([text, time]) => (
+                                        <div key={text} className="p-3 bg-purple-50 rounded-lg">
+                                            <p className="text-sm">{text}</p>
+                                            <p className="text-xs text-gray-500">{time}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Recent Activity */}
+                            <div className="bg-white border rounded-lg p-6">
+                                <h3 className="text-lg font-semibold mb-4">
+                                    Recent Activity
+                                </h3>
+                                <ul className="space-y-3 text-sm text-gray-600">
+                                    <li>New booking received</li>
+                                    <li>Event updated</li>
+                                    <li>Payment received</li>
+                                </ul>
+                            </div>
+
+                            {/* Quick Links */}
+                            <div className="bg-white border rounded-lg p-6">
+                                <h3 className="text-lg font-semibold mb-4">
+                                    Quick Links
+                                </h3>
+                                <div className="space-y-2">
+                                    <Link className="flex items-center p-2 hover:bg-gray-100 rounded-lg" to="/events">
+                                        <i className="ri-calendar-event-line mr-3"></i>
+                                        Browse All Events
+                                    </Link>
+                                    <Link className="flex items-center p-2 hover:bg-gray-100 rounded-lg" to="/organizer/analytics">
+                                        <i className="ri-bar-chart-line mr-3"></i>
+                                        View Analytics
+                                    </Link>
+                                    <Link className="flex items-center p-2 hover:bg-gray-100 rounded-lg" to="/organizer/attendees">
+                                        <i className="ri-group-line mr-3"></i>
+                                        Manage Attendees
+                                    </Link>
+                                    <Link className="flex items-center p-2 hover:bg-gray-100 rounded-lg" to="/settings">
+                                        <i className="ri-settings-line mr-3"></i>
+                                        Account Settings
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <Footer />
+        </>
+    );
+}
