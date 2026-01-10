@@ -1,8 +1,8 @@
 import { useSearchParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { RiCalendarEventLine, RiUserLine, RiAdminLine } from "react-icons/ri";
 import { login, register, checkEmailAvailability, checkUserIdAvailability } from "../store/auth/authSlice";
+import { AuthAdminIcon, AuthUserIcon, BrandIcon, OrganizerIcon } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -159,7 +159,7 @@ export default function Auth() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-linear-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <RiCalendarEventLine className="text-white" size={24} />
+              <BrandIcon className="text-white" size={24} />
             </div>
             <h1 className="text-3xl font-bold text-gray-900">
               {isSignIn ? "Welcome Back" : "Create Account"}
@@ -329,7 +329,7 @@ export default function Auth() {
                       <div
                         className={`w-10 h-10 rounded-lg flex items-center justify-center mr-4 ${role === "user" ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-600"}`}
                       >
-                        <RiUserLine size={20} />
+                        <AuthUserIcon size={20} />
                       </div>
                       <div>
                         <div className="font-medium text-gray-900">Event Attendee</div>
@@ -354,7 +354,7 @@ export default function Auth() {
                       <div
                         className={`w-10 h-10 rounded-lg flex items-center justify-center mr-4 ${role === "organizer" ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-600"}`}
                       >
-                        <RiCalendarEventLine size={20} />
+                        <OrganizerIcon size={20} />
                       </div>
                       <div>
                         <div className="font-medium text-gray-900">Event Organizer</div>
@@ -379,7 +379,7 @@ export default function Auth() {
                       <div
                         className={`w-10 h-10 rounded-lg flex items-center justify-center mr-4 ${role === "admin" ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-600"}`}
                       >
-                        <RiAdminLine size={20} />
+                        <AuthAdminIcon size={20} />
                       </div>
                       <div>
                         <div className="font-medium text-gray-900">Administrator</div>

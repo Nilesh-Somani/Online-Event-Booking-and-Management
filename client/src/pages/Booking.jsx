@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
+import { AddIcon, MinusIcon, CardIcon, PaypalIcon, ApplePayIcon, SuccessIcon, DownloadIcon, SecureIcon, RefundIcon, VerifiedIcon, BookingsIcon, InfoIcon, MoneyIcon, ArrowLeftIcon, HomeOutlineIcon, } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -63,13 +64,19 @@ export default function Booking() {
         <>
             <Navbar />
             <div className="pt-20 pb-16">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="min-w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Stepper */}
                     <div className="mb-12">
                         <div className="flex items-center justify-center space-x-8">
                             {["Tickets", "Details", "Payment", "Confirmation"].map((label, index) => {
                                 const active = step === index + 1;
                                 const completed = step > index + 1;
+                                const stepIcons = [
+                                    <BookingsIcon />,
+                                    <InfoIcon />,
+                                    <MoneyIcon />,
+                                    <SuccessIcon size={18} />,
+                                ];
                                 return (
                                     <div key={label} className="flex items-center">
                                         <div
@@ -78,7 +85,7 @@ export default function Booking() {
                                                 : "bg-white border-gray-300 text-gray-400"
                                                 }`}
                                         >
-                                            <i className={`ri-${label.toLowerCase()}-line text-lg`}></i>
+                                            {stepIcons[index]}
                                         </div>
                                         <div className="ml-3">
                                             <div
@@ -149,7 +156,7 @@ export default function Booking() {
                                                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                                                 className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
                                             >
-                                                <i className="ri-subtract-line"></i>
+                                                <MinusIcon />
                                             </button>
                                             <span className="text-xl font-semibold w-8 text-center">{quantity}</span>
                                             <button
@@ -157,7 +164,7 @@ export default function Booking() {
                                                 onClick={() => setQuantity(quantity + 1)}
                                                 className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
                                             >
-                                                <i className="ri-add-line"></i>
+                                                <AddIcon />
                                             </button>
                                         </div>
                                     </div>
@@ -245,8 +252,9 @@ export default function Booking() {
                                     <div className="flex justify-between">
                                         <button
                                             onClick={handleBack}
-                                            className="font-medium rounded-lg border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3"
+                                            className="flex items-center gap-2 font-medium rounded-lg border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3"
                                         >
+                                            <ArrowLeftIcon />
                                             Back
                                         </button>
                                         <button
@@ -265,13 +273,13 @@ export default function Booking() {
                                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Information</h2>
                                     <div className="mb-6 flex space-x-4">
                                         <button type="button" className="flex-1 p-4 border-2 border-purple-600 bg-purple-50 rounded-lg flex items-center justify-center space-x-2">
-                                            <i className="ri-bank-card-line text-xl"></i><span>Credit Card</span>
+                                            <CardIcon size={22} /><span>Credit Card</span>
                                         </button>
                                         <button type="button" className="flex-1 p-4 border-2 border-gray-200 rounded-lg flex items-center justify-center space-x-2 hover:border-gray-300">
-                                            <i className="ri-paypal-line text-xl"></i><span>PayPal</span>
+                                            <PaypalIcon size={22} /><span>PayPal</span>
                                         </button>
                                         <button type="button" className="flex-1 p-4 border-2 border-gray-200 rounded-lg flex items-center justify-center space-x-2 hover:border-gray-300">
-                                            <i className="ri-apple-line text-xl"></i><span>Apple Pay</span>
+                                            <ApplePayIcon size={22} /><span>Apple Pay</span>
                                         </button>
                                     </div>
                                     <div>
@@ -325,8 +333,9 @@ export default function Booking() {
                                     <div className="flex justify-between">
                                         <button
                                             onClick={handleBack}
-                                            className="font-medium rounded-lg border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3"
+                                            className="flex items-center gap-2 font-medium rounded-lg border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3"
                                         >
+                                            <ArrowLeftIcon />
                                             Back
                                         </button>
                                         <button
@@ -344,7 +353,7 @@ export default function Booking() {
                                 <form>
                                     <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
                                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                            <i className="ri-check-line text-3xl text-green-600"></i>
+                                            <SuccessIcon size={32} className="text-green-600" />
                                         </div>
                                         <h2 className="text-3xl font-bold text-gray-900 mb-4">Booking Confirmed!</h2>
                                         <p className="text-gray-600 mb-6">
@@ -380,15 +389,16 @@ export default function Booking() {
                                         <div className="space-y-4">
                                             <button
                                                 type="button"
-                                                className="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl px-6 py-3 text-base w-full"
+                                                className="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl px-6 py-3 text-base w-full flex items-center justify-center gap-2"
                                             >
-                                                <i className="ri-download-line mr-2"></i>Download Tickets
+                                                <DownloadIcon className="mr-2" />Download Tickets
                                             </button>
                                             <a href="/" data-discover="true">
                                                 <button
                                                     type="button"
-                                                    className="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3 text-base w-full"
+                                                    className="flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3 text-base w-full"
                                                 >
+                                                    <HomeOutlineIcon className="mr-2" />
                                                     Back to Home
                                                 </button>
                                             </a>
@@ -443,15 +453,15 @@ export default function Booking() {
 
                                     <div className="flex justify-center space-x-4 text-green-600 text-sm">
                                         <div className="flex items-center">
-                                            <i className="ri-shield-check-line mr-1"></i>
+                                            <SecureIcon className="mr-1" />
                                             <span>Secure</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <i className="ri-refund-line mr-1"></i>
+                                            <RefundIcon className="mr-1" />
                                             <span>Refundable</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <i className="ri-verified-badge-line mr-1"></i>
+                                            <VerifiedIcon className="mr-1" />
                                             <span>Verified</span>
                                         </div>
                                     </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowUpIcon, ArrowDownIcon, MoneyIcon, BookingsIcon, EventsIcon, ChartIcon, EditIcon, DownloadIcon } from "../components/Icon"
+import { ArrowUpIcon, ArrowDownIcon, MoneyIcon, TotalBookingsIcon, EventsIcon, ChartIcon, EditIcon, DownloadIcon } from "../components/Icon"
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -50,7 +50,7 @@ export default function Analytics() {
                                 <option value="1y">Last year</option>
                             </select>
                             <button className="relative font-medium rounded-lg bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg px-6 py-3 flex items-center gap-2">
-                                <ArrowDownTrayIcon className="w-5 h-5" /> Export Report
+                                <DownloadIcon /> Export Report
                             </button>
                         </div>
                     </div>
@@ -67,7 +67,7 @@ export default function Analytics() {
                                 </div>
                             </div>
                             <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
-                                <CurrencyDollarIcon className="w-6 h-6 text-green-600" />
+                                <MoneyIcon className="text-green-600" size={24} />
                             </div>
                         </div>
 
@@ -81,7 +81,7 @@ export default function Analytics() {
                                 </div>
                             </div>
                             <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
-                                <TicketIcon className="w-6 h-6 text-green-600" />
+                                <TotalBookingsIcon className="text-green-600" size={24} />
                             </div>
                         </div>
 
@@ -95,7 +95,7 @@ export default function Analytics() {
                                 </div>
                             </div>
                             <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-green-100">
-                                <CalendarIcon className="w-6 h-6 text-green-600" />
+                                <EventsIcon className="w-6 h-6 text-green-600" />
                             </div>
                         </div>
 
@@ -109,7 +109,7 @@ export default function Analytics() {
                                 </div>
                             </div>
                             <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-red-100">
-                                <ChartBarIcon className="w-6 h-6 text-red-600" />
+                                <ChartIcon className="w-6 h-6 text-red-600" />
                             </div>
                         </div>
                     </div>
@@ -224,10 +224,10 @@ export default function Analytics() {
                         <div className="bg-white rounded-lg border border-gray-200 p-6">
                             <h3 className="text-lg font-semibold mb-6">Recent Activity</h3>
                             {[
-                                { icon: TicketIcon, title: "New booking", event: "Summer Festival", time: "2 min ago" },
-                                { icon: CalendarIcon, title: "Event created", event: "Tech Meetup", time: "15 min ago" },
-                                { icon: CurrencyDollarIcon, title: "Payment received", event: "Art Exhibition", time: "1 hour ago" },
-                                { icon: PencilIcon, title: "Event updated", event: "Food Festival", time: "2 hours ago" },
+                                { icon: TotalBookingsIcon, title: "New booking", event: "Summer Festival", time: "2 min ago" },
+                                { icon: EventsIcon, title: "Event created", event: "Tech Meetup", time: "15 min ago" },
+                                { icon: MoneyIcon, title: "Payment received", event: "Art Exhibition", time: "1 hour ago" },
+                                { icon: EditIcon, title: "Event updated", event: "Food Festival", time: "2 hours ago" },
                             ].map((act, idx) => (
                                 <div key={idx} className="flex items-start space-x-3">
                                     <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mt-1">

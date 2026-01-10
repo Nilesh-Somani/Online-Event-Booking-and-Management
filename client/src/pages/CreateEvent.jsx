@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { InfoIcon, FileIcon, BookingsIcon, SuccessIcon, AddIcon, DeleteIcon, ImageIcon, ArrowLeftIcon, ArrowRightIcon, } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -36,10 +37,10 @@ export default function CreateEvent() {
                     <div className="mb-8">
                         <div className="flex items-center justify-center">
                             {[
-                                { label: "Basic Info", icon: "ri-information-line" },
-                                { label: "Details", icon: "ri-file-text-line" },
-                                { label: "Tickets", icon: "ri-ticket-line" },
-                                { label: "Review", icon: "ri-check-line" },
+                                { label: "Basic Info", icon: <InfoIcon /> },
+                                { label: "Details", icon: <FileIcon /> },
+                                { label: "Tickets", icon: <BookingsIcon /> },
+                                { label: "Review", icon: <SuccessIcon /> },
                             ].map((tab, idx) => (
                                 <div key={tab.label} className="flex items-center">
                                     <div
@@ -48,7 +49,7 @@ export default function CreateEvent() {
                                             : "border-gray-300 text-gray-400"
                                             }`}
                                     >
-                                        <i className={`${tab.icon}`}></i>
+                                        {tab.icon}
                                     </div>
                                     <span
                                         className={`ml-2 text-sm font-medium ${currentTab >= idx ? "text-purple-600" : "text-gray-400"
@@ -112,7 +113,7 @@ export default function CreateEvent() {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Event Image</label>
                                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                        <i className="ri-image-line text-3xl text-gray-400 mb-2"></i>
+                                        <ImageIcon className="text-gray-400 mb-2" />
                                         <p className="text-gray-600 mb-2">Upload event image</p>
                                         <input accept="image/*" className="hidden" id="image-upload" type="file" />
                                         <label htmlFor="image-upload">
@@ -218,9 +219,9 @@ export default function CreateEvent() {
                                     <button
                                         type="button"
                                         onClick={addTicket}
-                                        className="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3 text-base"
+                                        className="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3 text-base flex items-center gap-1"
                                     >
-                                        <i className="ri-add-line mr-2"></i>Add Ticket Type
+                                        <AddIcon className="mr-2" />Add Ticket Type
                                     </button>
                                 </div>
 
@@ -238,7 +239,7 @@ export default function CreateEvent() {
                                                         }}
                                                         className="text-red-500 hover:text-red-700"
                                                     >
-                                                        <i className="ri-delete-bin-line"></i>
+                                                        <DeleteIcon />
                                                     </button>
                                                 )}
                                             </div>
@@ -342,7 +343,7 @@ export default function CreateEvent() {
                                 className={`font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 px-6 py-3 text-base ${currentTab === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-purple-600 hover:text-white"
                                     }`}
                             >
-                                <i className="ri-arrow-left-line mr-2"></i>Previous
+                                <ArrowLeftIcon className="mr-2" />Previous
                             </button>
                             <button
                                 type="button"
@@ -350,7 +351,7 @@ export default function CreateEvent() {
                                 className={`font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer px-6 py-3 text-base bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl`}
                             >
                                 {currentTab < 3 ? "Next" : "Finish"}
-                                <i className="ri-arrow-right-line ml-2"></i>
+                                <ArrowRightIcon className="ml-2" />
                             </button>
                         </div>
                     </div>

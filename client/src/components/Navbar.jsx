@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../store/auth/authSlice";
-import { BrandIcon, HomeIcon, EventsIcon, CategoriesIcon, DashboardIcon, CreateEventIcon, AttendeesIcon, AnalyticsIcon, AdminIcon, UserIcon, BookingsIcon, ProfileIcon, BecomeOrganizerIcon, SettingsIcon, LogoutIcon, MenuIcon, CloseIcon } from "./Icon";
+import { BrandIcon, HomeIcon, EventsIcon, CategoriesIcon, DashboardIcon, CreateEventIcon, AttendeesIcon, AnalyticsIcon, AuthAdminIcon, AuthUserIcon, BookingsIcon, ProfileIcon, BecomeOrganizerIcon, SettingsIcon, LogoutIcon, MenuIcon, CloseIcon } from "./Icon";
 
 export default function Navbar() {
     const location = useLocation();
@@ -53,8 +52,8 @@ export default function Navbar() {
         "Create Event": CreateEventIcon,
         Attendees: AttendeesIcon,
         Analytics: AnalyticsIcon,
-        "Admin Panel": AdminIcon,
-        Users: UserIcon,
+        "Admin Panel": AuthAdminIcon,
+        Users: AuthUserIcon,
         "My Bookings": BookingsIcon,
     };
 
@@ -63,8 +62,8 @@ export default function Navbar() {
         "Create Event": CreateEventIcon,
         Attendees: AttendeesIcon,
         Analytics: AnalyticsIcon,
-        "Admin Panel": AdminIcon,
-        Users: UserIcon,
+        "Admin Panel": AuthAdminIcon,
+        Users: AuthUserIcon,
         "My Bookings": BookingsIcon,
     };
 

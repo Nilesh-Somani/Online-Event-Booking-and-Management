@@ -1,5 +1,6 @@
-import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { CalendarOutlineIcon, TimeIcon, LocationIcon, BreadcrumbArrowIcon, MinusIcon, AddIcon, SuccessIcon, FacebookIcon, TwitterIcon, LinkIcon, } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -12,7 +13,7 @@ const EVENTS = {
         time: "6:00 PM – 11:30 PM",
         location: "Central Park Amphitheater, New York",
         image:
-            "https://readdy.ai/api/search-image?query=vibrant%20summer%20music%20festival%20with%20colorful%20stage%20lights",
+            "/hero-bg.jpg",
 
         tickets: [
             {
@@ -130,10 +131,10 @@ export default function EventDetail() {
                 <div className="absolute top-6 left-4 lg:left-6 z-10">
                     <nav className="flex items-center space-x-2 text-white/80 text-sm">
                         <Link to="/">Home</Link>
-                        <i className="ri-arrow-right-s-line" />
+                        <BreadcrumbArrowIcon />
                         <Link to="/events">Events</Link>
-                        <i className="ri-arrow-right-s-line" />
-                        <span className="text-white">{event.title}</span>
+                        <BreadcrumbArrowIcon />
+                        <span>{event.title}</span>
                     </nav>
                 </div>
 
@@ -161,16 +162,16 @@ export default function EventDetail() {
                         <div className="flex items-center space-x-3 mb-4">
                             <button
                                 onClick={() => setQty(Math.max(1, qty - 1))}
-                                className="w-10 h-10 border rounded-full"
+                                className="w-10 h-10 border rounded-full flex items-center justify-center"
                             >
-                                <i className="ri-subtract-line" />
+                                <MinusIcon />
                             </button>
                             <span className="text-xl font-semibold">{qty}</span>
                             <button
                                 onClick={() => setQty(qty + 1)}
-                                className="w-10 h-10 border rounded-full"
+                                className="w-10 h-10 border rounded-full flex items-center justify-center"
                             >
-                                <i className="ri-add-line" />
+                                <AddIcon />
                             </button>
                         </div>
 
@@ -200,14 +201,14 @@ export default function EventDetail() {
 
                         {/* EVENT META */}
                         <div className="flex flex-wrap gap-4 text-gray-600 mb-6">
-                            <span>
-                                <i className="ri-calendar-line mr-1" /> {event.date}
+                            <span className="flex justify-center items-center gap-1">
+                                <CalendarOutlineIcon className="mr-1" /> {event.date}
                             </span>
-                            <span>
-                                <i className="ri-time-line mr-1" /> {event.time}
+                            <span className="flex justify-center items-center gap-1">
+                                <TimeIcon className="mr-1" /> {event.time}
                             </span>
-                            <span>
-                                <i className="ri-map-pin-line mr-1" /> {event.location}
+                            <span className="flex justify-center items-center gap-1">
+                                <LocationIcon className="mr-1" /> {event.location}
                             </span>
                         </div>
 
@@ -241,7 +242,7 @@ export default function EventDetail() {
                                 <ul className="space-y-3">
                                     {event.highlights.map((h, i) => (
                                         <li key={i} className="flex items-center">
-                                            <i className="ri-check-line text-green-500 mr-3" />
+                                            <SuccessIcon className="text-green-500 mr-3" />
                                             {h}
                                         </li>
                                     ))}
@@ -332,14 +333,14 @@ export default function EventDetail() {
 
                             <div className="bg-white border p-4 rounded-lg">
                                 <h4 className="font-semibold mb-3">Share Event</h4>
-                                <button className="w-full bg-blue-600 text-white py-3 rounded-lg mb-2">
-                                    Facebook
+                                <button className="w-full bg-blue-600 text-white py-3 rounded-lg mb-2 flex items-center justify-center">
+                                    <FacebookIcon className="mr-2" /> Facebook
                                 </button>
-                                <button className="w-full bg-sky-500 text-white py-3 rounded-lg mb-2">
-                                    Twitter
+                                <button className="w-full bg-sky-500 text-white py-3 rounded-lg mb-2 flex items-center justify-center">
+                                    <TwitterIcon className="mr-2" /> Twitter
                                 </button>
-                                <button className="w-full bg-gray-600 text-white py-3 rounded-lg">
-                                    Copy Link
+                                <button className="w-full bg-gray-600 text-white py-3 rounded-lg flex items-center justify-center">
+                                    <LinkIcon className="mr-2" /> Copy Link
                                 </button>
                             </div>
                         </div>

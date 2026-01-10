@@ -1,4 +1,5 @@
 import { useSelector } from "react-redux";
+import { BookingsIcon, CalendarOutlineIcon, MoneyIcon } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -37,16 +38,21 @@ export default function MyBookings() {
                                     className="bg-white border rounded-lg p-6 flex justify-between items-center"
                                 >
                                     <div>
-                                        <h2 className="font-semibold text-lg">{b.eventTitle}</h2>
+                                        <h2 className="flex items-center gap-2 font-semibold text-lg">
+                                            <BookingsIcon />
+                                            {b.eventTitle}
+                                        </h2>
                                         <p className="text-sm text-gray-600">
                                             {b.ticketType} × {b.quantity}
                                         </p>
-                                        <p className="text-sm text-gray-600">
-                                            Booked on: {b.date}
+                                        <p className="text-sm text-gray-600 flex items-center gap-1">
+                                            <CalendarOutlineIcon size={14} />
+                                            {b.date}
                                         </p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-purple-600">
+                                        <p className="font-bold text-purple-600 flex items-center gap-1 justify-end">
+                                            <MoneyIcon size={16} />
                                             ${b.total.toFixed(2)}
                                         </p>
                                     </div>

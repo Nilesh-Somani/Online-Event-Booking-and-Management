@@ -30,13 +30,13 @@ const organizerProfileSchema = new mongoose.Schema(
         },
 
         venueInfo: {
-            name: String,
-            type: String,
-            address: String,
-            capacity: Number,
-            costPerDay: Number,
-            description: String,
-            photos: [String],
+            name: { type: String },
+            type: { type: String },
+            address: { type: String },
+            capacity: { type: Number },
+            costPerDay: { type: Number },
+            description: { type: String },
+            photos: [{ type: String }],
         },
 
         eventTypes: [String],

@@ -1,4 +1,4 @@
-import { Search, Calendar, MapPin } from "lucide-react";
+import { SearchOutlineIcon, CalendarOutlineIcon, LocationIcon, BookingsIcon, MusicIcon, TechnologyIcon, SportsIcon, ArtsIcon, FoodIcon, BusinessIcon, ArrowRightIcon } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -10,15 +10,10 @@ export default function Home() {
       {/* HERO */}
       <section className="relative pt-20 pb-16 overflow-hidden">
         <div class="absolute inset-0">
+          {/* Background */}
           <img alt="Hero Background" class="w-full h-full object-cover object-top" src="/hero-bg.jpg" />
-            <div class="absolute inset-0 bg-linear-to-b from-black/40 via-black/20 to-black/40"></div>
+          <div class="absolute inset-0 bg-linear-to-b from-black/40 via-black/20 to-black/40"></div>
         </div>
-        {/* Background */}
-        {/* <img
-          src="https://images.unsplash.com/photo-1524985069026-dd778a71c7b4"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/60" /> */}
 
         {/* Text */}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -35,21 +30,21 @@ export default function Home() {
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
                 <div class="relative">
-                  <i class="ri-map-pin-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                  <LocationIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input placeholder="Where?" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm" type="text" value="" />
                 </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
                 <div class="relative">
-                  <i class="ri-calendar-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                  <CalendarOutlineIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm" type="date" value="" />
                 </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Event Type</label>
                 <div class="relative">
-                  <i class="ri-ticket-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                  <BookingsIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <select class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm appearance-none">
                     <option value="all">All Events</option>
                     <option value="Music &amp; Concerts">Music &amp; Concerts</option>
@@ -64,8 +59,8 @@ export default function Home() {
                 </div>
               </div>
               <div class="flex items-end">
-                <button type="submit" class="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl px-6 py-3 text-base  w-full">
-                  <i class="ri-search-line mr-2"></i>Search Events
+                <button type="submit" class="flex items-center gap-1 font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl px-6 py-3 text-base  w-full">
+                  <SearchOutlineIcon className="mr-2" /> Search Events
                 </button></div>
             </div>
           </form>
@@ -95,7 +90,14 @@ export default function Home() {
                 key={cat}
                 className="bg-white rounded-2xl p-6 text-center shadow hover:shadow-lg transition"
               >
-                <div className="w-12 h-12 mx-auto bg-purple-100 rounded-full mb-3" />
+                <div className="w-12 h-12 mx-auto bg-purple-100 rounded-full mb-3 flex items-center justify-center">
+                  {cat === "Music & Concerts" && (<MusicIcon className="text-purple-600" />)}
+                  {cat === "Technology" && (<TechnologyIcon className="text-purple-600" />)}
+                  {cat === "Sports & Fitness" && (<SportsIcon className="text-purple-600" />)}
+                  {cat === "Arts & Culture" && (<ArtsIcon className="text-purple-600" />)}
+                  {cat === "Food & Drink" && (<FoodIcon className="text-purple-600" />)}
+                  {cat === "Business" && (<BusinessIcon className="text-purple-600" />)}
+                </div>
                 <h4 className="font-semibold">{cat}</h4>
                 <p className="text-sm text-gray-500 mt-1">Explore Events</p>
               </div>
@@ -119,8 +121,8 @@ export default function Home() {
               </p>
             </div>
 
-            <button className="px-5 py-2 rounded-lg border border-purple-600 text-purple-600 hover:bg-purple-50">
-              View All Events →
+            <button className="flex items-center gap-1 px-5 py-2 rounded-lg border border-purple-600 text-purple-600 hover:bg-purple-50">
+              View All Events <ArrowRightIcon />
             </button>
           </div>
 

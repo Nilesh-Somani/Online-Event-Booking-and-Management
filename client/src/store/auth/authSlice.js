@@ -15,7 +15,7 @@ export const login = createAsyncThunk(
             const data = await res.json();
             if (!res.ok) return rejectWithValue(data.message);
 
-            return data.user;
+            return data;
         } catch {
             return rejectWithValue("Server error");
         }
@@ -47,7 +47,7 @@ export const register = createAsyncThunk(
             const data = await res.json();
             if (!res.ok) return rejectWithValue(data.message);
 
-            return data.user;
+            return data;
         } catch {
             return rejectWithValue("Server error");
         }
@@ -115,6 +115,12 @@ const authSlice = createSlice({
         resetUserIdAvailability(state) {
             state.availability.userId = null;
         },
+        setAuthUser(state, action) {
+            state.user = action.payload;
+
+            // ✅ REPLACE, DO NOT MERGE
+            localStorage.setItem("authUser", JSON.stringify(action.payload));
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -125,8 +131,9 @@ const authSlice = createSlice({
             })
             .addCase(login.fulfilled, (state, action) => {
                 state.loading = false;
-                state.user = action.payload;
-                localStorage.setItem("authUser", JSON.stringify(action.payload));
+                state.user = action.payload.user;
+                localStorage.setItem("authUser", JSON.stringify(action.payload.user));
+                localStorage.setItem("authToken", action.payload.token);
             })
             .addCase(login.rejected, (state, action) => {
                 state.loading = false;
@@ -140,8 +147,9 @@ const authSlice = createSlice({
             })
             .addCase(register.fulfilled, (state, action) => {
                 state.loading = false;
-                state.user = action.payload;
-                localStorage.setItem("authUser", JSON.stringify(action.payload));
+                state.user = action.payload.user;
+                localStorage.setItem("authUser", JSON.stringify(action.payload.user));
+                localStorage.setItem("authToken", action.payload.token);
             })
             .addCase(register.rejected, (state, action) => {
                 state.loading = false;
@@ -176,5 +184,5 @@ const authSlice = createSlice({
     }
 });
 
-export const { logout, resetEmailAvailability, resetUserIdAvailability } = authSlice.actions;
+export const { logout, resetEmailAvailability, resetUserIdAvailability, setAuthUser } = authSlice.actions;
 export default authSlice.reducer;

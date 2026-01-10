@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UsersIcon, DashboardEventsIcon, UserGroupIcon, RevenueIcon, SearchIcon, AddIcon, EditIcon, DeleteIcon } from "../components/Icon";
+import { UsersIcon, TotalEventsIcon, UserGroupIcon, RevenueIcon, SearchIcon, AddIcon, EditIcon, DeleteIcon } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -54,7 +54,7 @@ export default function AdminPanel() {
                             value="5"
                         />
                         <StatCard
-                            icon={DashboardEventsIcon}
+                            icon={TotalEventsIcon}
                             bg="bg-green-100"
                             color="text-green-600"
                             label="Total Events"

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { NotificationIcon, CreateEventIcon, TotalEventsIcon, AttendeesIcon, MoneyIcon, ViewIcon, EditIcon, AnalyticsIcon, SettingsIcon, EventsIcon } from "../components/Icon";
+
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Link } from "react-router-dom";
@@ -51,7 +53,7 @@ export default function OrganizerDashboard() {
                                 onClick={() => setShowNotifications(v => !v)}
                                 className="relative p-2 text-gray-600 hover:text-gray-900"
                             >
-                                <i className="ri-notification-line text-xl"></i>
+                                <NotificationIcon size={22} />
                                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                                     2
                                 </span>
@@ -88,8 +90,8 @@ export default function OrganizerDashboard() {
                                                 <div className="flex items-start">
                                                     <div
                                                         className={`w-2 h-2 rounded-full mt-2 mr-3 ${unread
-                                                                ? "bg-purple-500"
-                                                                : "bg-gray-400"
+                                                            ? "bg-purple-500"
+                                                            : "bg-gray-400"
                                                             }`}
                                                     ></div>
                                                     <div>
@@ -109,8 +111,8 @@ export default function OrganizerDashboard() {
 
                             {/* Create Event */}
                             <Link to="/create-event">
-                                <button className="bg-linear-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition">
-                                    <i className="ri-add-line mr-2"></i>
+                                <button className="flex items-center gap-2 bg-linear-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition">
+                                    <CreateEventIcon className="mr-2" />
                                     Create Event
                                 </button>
                             </Link>
@@ -120,15 +122,15 @@ export default function OrganizerDashboard() {
                     {/* ================= STATS ================= */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                         {[
-                            ["Total Events", "4", "ri-calendar-event-line", "blue"],
-                            ["Total Attendees", "1640", "ri-group-line", "green"],
-                            ["Total Revenue", "$39,600", "ri-money-dollar-circle-line", "purple"],
-                            ["Page Views", "12,543", "ri-eye-line", "orange"],
-                        ].map(([label, value, icon, color]) => (
+                            ["Total Events", "4", <TotalEventsIcon />, "bg-blue-100", "text-blue-600"],
+                            ["Total Attendees", "1640", <AttendeesIcon />, "bg-green-100", "text-green-600"],
+                            ["Total Revenue", "$39,600", <MoneyIcon />, "bg-purple-100", "text-purple-600"],
+                            ["Page Views", "12,543", <ViewIcon />, "bg-orange-100", "text-orange-600"],
+                        ].map(([label, value, IconEl, bgColor, tColor]) => (
                             <div key={label} className="bg-white border rounded-lg p-6">
                                 <div className="flex items-center">
-                                    <div className={`w-12 h-12 bg-${color}-100 rounded-lg flex items-center justify-center mr-4`}>
-                                        <i className={`${icon} text-xl text-${color}-600`}></i>
+                                    <div className={`w-12 h-12 ${bgColor} rounded-lg flex items-center justify-center mr-4`}>
+                                        <span className={tColor}>{IconEl}</span>
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-600">{label}</p>
@@ -153,18 +155,18 @@ export default function OrganizerDashboard() {
 
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     {[
-                                        ["Create Event", "ri-add-circle-line", "purple", "/create-event"],
-                                        ["Analytics", "ri-bar-chart-line", "blue", "/analytics"],
-                                        ["Attendees", "ri-group-line", "green", "/attendees"],
-                                        ["Settings", "ri-settings-line", "gray", "/settings"],
-                                    ].map(([label, icon, color, link]) => (
+                                        ["Create Event", <CreateEventIcon />, "bg-purple-50", "hover:bg-purple-100", "text-purple-600", "text-purple-700", "/create-event"],
+                                        ["Analytics", <AnalyticsIcon />, "bg-blue-50", "hover:bg-blue-100", "text-blue-600", "text-blue-700", "/analytics"],
+                                        ["Attendees", <AttendeesIcon />, "bg-green-50", "hover:bg-green-100", "text-green-600", "text-green-700", "/attendees"],
+                                        ["Settings", <SettingsIcon />, "bg-gray-50", "hover:bg-gray-100", "text-gray-600", "text-gray-700", "/settings"],
+                                    ].map(([label, IconEl, bgColor , bgHColor, tIColor, tLColor, link]) => (
                                         <Link
                                             key={label}
                                             to={link}
-                                            className={`flex flex-col items-center p-4 bg-${color}-50 rounded-lg hover:bg-${color}-100`}
+                                            className={`flex flex-col items-center p-4 ${bgColor} rounded-lg ${bgHColor}`}
                                         >
-                                            <i className={`${icon} text-2xl text-${color}-600 mb-2`}></i>
-                                            <span className={`text-sm font-medium text-${color}-700`}>
+                                            <span className={`${tIColor} mb-2`}>{IconEl}</span>
+                                            <span className={`text-sm font-medium ${tLColor}`}>
                                                 {label}
                                             </span>
                                         </Link>
@@ -212,26 +214,26 @@ export default function OrganizerDashboard() {
                                                 {/* STATUS USED (warning fixed) */}
                                                 <span
                                                     className={`inline-block mt-1 px-3 py-1 text-xs rounded-full ${status === "published"
-                                                            ? "bg-green-100 text-green-700"
-                                                            : "bg-yellow-100 text-yellow-700"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : "bg-yellow-100 text-yellow-700"
                                                         }`}
                                                 >
                                                     {status}
                                                 </span>
 
-                                                <p className="text-sm text-gray-500 mt-2">
-                                                    <i className="ri-group-line mr-1"></i>
+                                                <p className="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                                                    <AttendeesIcon size={14} className="mr-1" />
                                                     {attendees} attendees
                                                 </p>
                                                 <p className="text-green-600 font-medium">{revenue}</p>
                                             </div>
 
                                             <div className="flex gap-2">
-                                                <button className="border-2 border-purple-600 text-purple-600 px-4 py-2 rounded-lg text-sm hover:bg-purple-600 hover:text-white">
-                                                    <i className="ri-edit-line mr-1"></i>Edit
+                                                <button className="flex items-center border-2 border-purple-600 text-purple-600 px-4 py-2 rounded-lg text-sm hover:bg-purple-600 hover:text-white">
+                                                    <EditIcon className="mr-1" /> Edit
                                                 </button>
-                                                <button className="border-2 border-purple-600 text-purple-600 px-4 py-2 rounded-lg text-sm hover:bg-purple-600 hover:text-white">
-                                                    <i className="ri-eye-line mr-1"></i>View
+                                                <button className="flex items-center border-2 border-purple-600 text-purple-600 px-4 py-2 rounded-lg text-sm hover:bg-purple-600 hover:text-white">
+                                                    <ViewIcon className="mr-1" /> View
                                                 </button>
                                             </div>
                                         </div>
@@ -286,19 +288,19 @@ export default function OrganizerDashboard() {
                                 </h3>
                                 <div className="space-y-2">
                                     <Link className="flex items-center p-2 hover:bg-gray-100 rounded-lg" to="/events">
-                                        <i className="ri-calendar-event-line mr-3"></i>
+                                        <EventsIcon className="mr-3" />
                                         Browse All Events
                                     </Link>
                                     <Link className="flex items-center p-2 hover:bg-gray-100 rounded-lg" to="/organizer/analytics">
-                                        <i className="ri-bar-chart-line mr-3"></i>
+                                        <AnalyticsIcon className="mr-3" />
                                         View Analytics
                                     </Link>
                                     <Link className="flex items-center p-2 hover:bg-gray-100 rounded-lg" to="/organizer/attendees">
-                                        <i className="ri-group-line mr-3"></i>
+                                        <AttendeesIcon className="mr-3" />
                                         Manage Attendees
                                     </Link>
                                     <Link className="flex items-center p-2 hover:bg-gray-100 rounded-lg" to="/settings">
-                                        <i className="ri-settings-line mr-3"></i>
+                                        <SettingsIcon className="mr-3" />
                                         Account Settings
                                     </Link>
                                 </div>

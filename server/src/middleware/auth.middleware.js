@@ -5,7 +5,10 @@ export const protect = (req, res, next) => {
     if (!token) return res.status(401).json({ message: "Not authorized" });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+
+    // Map token "id" to "_id" for Mongoose
+    req.user = { _id: decoded.id, role: decoded.role };
+
     next();
 };
 

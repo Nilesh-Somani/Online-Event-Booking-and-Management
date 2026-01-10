@@ -1,15 +1,7 @@
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import {
-    ArrowDownTrayIcon,
-    EnvelopeIcon,
-    UserGroupIcon,
-    CheckCircleIcon,
-    ClockIcon,
-    XCircleIcon,
-    EyeIcon,
-} from "@heroicons/react/24/outline";
+import { ExportIcon, MailIcon, UserGroupIcon, ConfirmedIcon, PendingIcon, CancelledIcon, ViewIcon } from "../components/Icon";
 
 export default function OrganizerAttendees() {
     const [search, setSearch] = useState("");
@@ -28,25 +20,25 @@ export default function OrganizerAttendees() {
                         <div className="flex items-center gap-4">
                             <div className="relative">
                                 <button className="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3 text-base flex items-center gap-2">
-                                    <ArrowDownTrayIcon className="w-5 h-5" />
+                                    <ExportIcon size={20} />
                                     Export List
                                 </button>
                                 <div id="export-menu" className="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
                                     <div className="py-1">
                                         <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-                                            <ArrowDownTrayIcon className="w-4 h-4" /> Export as CSV
+                                            <ExportIcon size={16} /> Export as CSV
                                         </button>
                                         <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-                                            <ArrowDownTrayIcon className="w-4 h-4" /> Export as Excel
+                                            <ExportIcon size={16} /> Export as Excel
                                         </button>
                                         <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-                                            <ArrowDownTrayIcon className="w-4 h-4" /> Export as PDF
+                                            <ExportIcon size={16} /> Export as PDF
                                         </button>
                                     </div>
                                 </div>
                             </div>
                             <button className="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl px-6 py-3 text-base flex items-center gap-2">
-                                <EnvelopeIcon className="w-5 h-5" />
+                                <MailIcon size={20} />
                                 Send Message
                             </button>
                         </div>
@@ -56,7 +48,7 @@ export default function OrganizerAttendees() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                         <div className="bg-white rounded-lg border border-gray-200 p-6 flex items-center">
                             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                                <UserGroupIcon className="w-6 h-6 text-blue-600" />
+                                <UserGroupIcon className="text-blue-600" size={24} />
                             </div>
                             <div>
                                 <p className="text-sm text-gray-600">Total Attendees</p>
@@ -65,7 +57,7 @@ export default function OrganizerAttendees() {
                         </div>
                         <div className="bg-white rounded-lg border border-gray-200 p-6 flex items-center">
                             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
-                                <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                                <ConfirmedIcon className="text-green-600" size={24} />
                             </div>
                             <div>
                                 <p className="text-sm text-gray-600">Confirmed</p>
@@ -74,7 +66,7 @@ export default function OrganizerAttendees() {
                         </div>
                         <div className="bg-white rounded-lg border border-gray-200 p-6 flex items-center">
                             <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
-                                <ClockIcon className="w-6 h-6 text-yellow-600" />
+                                <PendingIcon className="text-yellow-600" size={24} />
                             </div>
                             <div>
                                 <p className="text-sm text-gray-600">Pending</p>
@@ -83,7 +75,7 @@ export default function OrganizerAttendees() {
                         </div>
                         <div className="bg-white rounded-lg border border-gray-200 p-6 flex items-center">
                             <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
-                                <XCircleIcon className="w-6 h-6 text-red-600" />
+                                <CancelledIcon className="text-red-600" size={24} />
                             </div>
                             <div>
                                 <p className="text-sm text-gray-600">Cancelled</p>
@@ -176,13 +168,13 @@ export default function OrganizerAttendees() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center space-x-2">
                                                 <button className="text-purple-600 hover:text-purple-900 p-1" title="View Details">
-                                                    <EyeIcon className="w-5 h-5" />
+                                                    <ViewIcon size={20} />
                                                 </button>
                                                 <button className="text-blue-600 hover:text-blue-900 p-1" title="Send Email">
-                                                    <EnvelopeIcon className="w-5 h-5" />
+                                                    <MailIcon size={20} />
                                                 </button>
                                                 <button className="text-green-600 hover:text-green-900 p-1" title="Download Ticket">
-                                                    <ArrowDownTrayIcon className="w-5 h-5" />
+                                                    <ExportIcon size={20} />
                                                 </button>
                                             </div>
                                         </td>

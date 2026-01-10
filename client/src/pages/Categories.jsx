@@ -1,6 +1,7 @@
+import { Link } from "react-router-dom";
+import { MusicIcon, TechnologyIcon, SportsIcon, ArtsIcon, FoodIcon, BusinessIcon, EducationIcon, HealthIcon, } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { Link } from "react-router-dom";
 
 export default function Categories() {
   const categories = [
@@ -13,6 +14,17 @@ export default function Categories() {
     "Education",
     "Health & Wellness",
   ];
+
+  const categoryIcons = {
+    "Music & Concerts": MusicIcon,
+    "Technology": TechnologyIcon,
+    "Sports & Fitness": SportsIcon,
+    "Arts & Culture": ArtsIcon,
+    "Food & Drink": FoodIcon,
+    "Business": BusinessIcon,
+    "Education": EducationIcon,
+    "Health & Wellness": HealthIcon,
+  };
 
   return (
     <>
@@ -31,7 +43,12 @@ export default function Categories() {
                 to={`/events?category=${encodeURIComponent(cat)}`}
                 className="bg-white rounded-2xl p-6 text-center shadow hover:shadow-lg transition"
               >
-                <div className="w-12 h-12 mx-auto bg-purple-100 rounded-full mb-3" />
+                <div className="w-12 h-12 mx-auto bg-purple-100 rounded-full mb-3 flex items-center justify-center">
+                  {(() => {
+                    const Icon = categoryIcons[cat];
+                    return <Icon size={22} className="text-purple-600" />;
+                  })()}
+                </div>
                 <h4 className="font-semibold">{cat}</h4>
                 <p className="text-sm text-gray-500 mt-1">Explore Events</p>
               </Link>

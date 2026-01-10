@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { HiSearch, HiViewGrid, HiViewList } from "react-icons/hi";
-
+import { SearchOutlineIcon, GridIcon, ListIcon } from "../components/Icon";
 import events from "../data/events";
 import EventGridCard from "../components/events/EventGridCard";
 import EventListCard from "../components/events/EventListCard";
@@ -78,7 +77,7 @@ export default function Events() {
               <div className="lg:col-span-2">
                 <div className="relative">
                   <i className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                    <HiSearch />
+                    <SearchOutlineIcon />
                   </i>
                   <input
                     type="text"
@@ -157,7 +156,7 @@ export default function Events() {
                       : "text-gray-400"
                     }`}
                 >
-                  <HiViewGrid size={20} />
+                  <GridIcon size={20} />
                 </button>
 
                 <button
@@ -167,7 +166,7 @@ export default function Events() {
                       : "text-gray-400"
                     }`}
                 >
-                  <HiViewList size={20} />
+                  <ListIcon size={20} />
                 </button>
               </div>
             </div>

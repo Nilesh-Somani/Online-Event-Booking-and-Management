@@ -1,5 +1,6 @@
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { FileIcon, ProfileIcon } from "../components/Icon";
 
 export default function OrganizerApplication() {
     return (
@@ -21,7 +22,8 @@ export default function OrganizerApplication() {
                     <form className="space-y-8">
                         {/* Personal Information */}
                         <div className="bg-white rounded-lg border border-gray-200 p-6">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                                <ProfileIcon size={20} />
                                 Personal Information
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -303,7 +305,8 @@ export default function OrganizerApplication() {
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                        <FileIcon size={16} />
                                         Business License *
                                     </label>
                                     <input
@@ -317,7 +320,8 @@ export default function OrganizerApplication() {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                        <FileIcon size={16} />
                                         Insurance Document *
                                     </label>
                                     <input
@@ -331,7 +335,8 @@ export default function OrganizerApplication() {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                        <FileIcon size={16} />
                                         Identity Document *
                                     </label>
                                     <input
@@ -345,7 +350,8 @@ export default function OrganizerApplication() {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                        <FileIcon size={16} />
                                         Venue Photos *
                                     </label>
                                     <input
