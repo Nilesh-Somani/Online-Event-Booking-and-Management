@@ -32,8 +32,19 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+
       <Route path="/events" element={<Events />} />
+      {/* Event Page's Filters Routes */}
+      <Route path="/events/category/:category" element={<Events />} />
+      <Route path="/events/search/:search" element={<Events />} />
+      <Route path="/events/location/:location" element={<Events />} />
+      {/* Event Page's Combined Filters Routes  */}
+      <Route path="/events/category/:category/location/:location" element={<Events />} />
+      <Route path="/events/search/:search/location/:location" element={<Events />} />
+      <Route path="/events/:filterType/:filterValue/:filterType2/:filterValue2" element={<Events />} />
+
       <Route path="/events/:eventId" element={<EventDetails />} />
+      
       <Route path="/categories" element={<Categories />} />
 
       <Route path="/auth" element={

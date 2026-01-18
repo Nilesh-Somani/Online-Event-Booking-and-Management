@@ -1,59 +1,126 @@
-import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { SearchOutlineIcon, GridIcon, ListIcon } from "../components/Icon";
-import events from "../data/events";
+
 import EventGridCard from "../components/events/EventGridCard";
 import EventListCard from "../components/events/EventListCard";
 
+import { fetchEvents } from "../store/events/eventsSlice";
+import { fetchBaseEventFilters, fetchDependentEventFilters } from "../store/events/eventFiltersSlice";
+import RoundedDropdown from "../components/events/ui/RoundedDropdown";
+
 export default function Events() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const params = useParams();
 
-  // Initialize state from URL query params
+  /* ----------------------------- Redux State ----------------------------- */
+  const { events, loading, error, total } = useSelector(
+    (state) => state.events
+  );
+  const {
+    categories: filterCategories,
+    locations: filterLocations,
+    loading: filtersLoading,
+  } = useSelector((state) => state.eventFilters);
+
+  /* ----------------------------- Local UI State ----------------------------- */
+  const category = params.category || "";
+  const search = params.search || "";
+  const [searchInput, setSearchInput] = useState(search);
+  const locationFilter = params.location || "";
+  const sortBy = params.sortBy || "date";
+  const [filters, setFilters] = useState({
+    category,
+    location: locationFilter,
+    sortBy,
+    order: 'asc'
+  });
   const [view, setView] = useState("grid");
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [category, setCategory] = useState(searchParams.get("category") || "");
-  const [location, setLocation] = useState(searchParams.get("location") || "");
-  const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "date");
 
-  // Update URL params when filters change
+  const sortedEvents = useMemo(() => {
+    const list = [...events];
+
+    const direction = filters.order === "asc" ? 1 : -1;
+
+    switch (filters.sortBy) {
+      case "date":
+        return list.sort(
+          (a, b) => direction * (new Date(a.date) - new Date(b.date))
+        );
+
+      case "title":
+        return list.sort(
+          (a, b) => direction * a.title.localeCompare(b.title)
+        );
+
+      case "price":
+        return list.sort(
+          (a, b) =>
+            direction *
+            ((a.tickets?.[0]?.price ?? 0) -
+              (b.tickets?.[0]?.price ?? 0))
+        );
+
+      case "popularity":
+        return list.sort(
+          (a, b) =>
+            direction *
+            ((b.bookingsCount ?? 0) - (a.bookingsCount ?? 0))
+        );
+
+      case "rating":
+        return list.sort(
+          (a, b) =>
+            direction *
+            ((b.rating ?? 0) - (a.rating ?? 0))
+        );
+
+      default:
+        return list;
+    }
+  }, [events, filters.sortBy, filters.order]);
+
+  /* ----------------------------- Fetch Events ----------------------------- */
   useEffect(() => {
-    const params = {};
-    if (search) params.search = search;
-    if (category) params.category = category;
-    if (location) params.location = location;
-    if (sortBy && sortBy !== "date") params.sortBy = sortBy;
-    setSearchParams(params);
-  }, [search, category, location, sortBy, setSearchParams]);
+    dispatch(
+      fetchEvents({
+        search,
+        category,
+        location: locationFilter,
+      })
+    );
+  }, [dispatch, search, category, locationFilter]);
 
-  // Filter & sort events
-  const filteredEvents = events
-    .filter((event) => {
-      const q = search.toLowerCase();
-      return (
-        event.title.toLowerCase().includes(q) ||
-        event.location.toLowerCase().includes(q) ||
-        event.organizer.toLowerCase().includes(q)
-      );
-    })
-    .filter((event) => (category ? event.category === category : true))
-    .filter((event) => (location ? event.location.includes(location) : true))
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "price":
-          return a.price - b.price;
-        case "rating":
-          return b.rating - a.rating;
-        case "title":
-          return a.title.localeCompare(b.title);
-        case "popularity":
-          return b.attending - a.attending;
-        default:
-          return new Date(a.date) - new Date(b.date);
-      }
-    });
+  /* Load BASE filters once */
+  useEffect(() => {
+    dispatch(fetchBaseEventFilters());
+  }, [dispatch]);
 
+  /* Category selected → update LOCATIONS only */
+  useEffect(() => {
+    if (filters.category) {
+      dispatch(fetchDependentEventFilters({ category: filters.category }));
+    } else {
+      // Reset back to ALL if cleared
+      dispatch(fetchBaseEventFilters());
+    }
+  }, [dispatch, filters.category]);
+
+  /* Location selected → update CATEGORIES only */
+  useEffect(() => {
+    if (filters.location) {
+      dispatch(fetchDependentEventFilters({ location: filters.location }));
+    } else {
+      dispatch(fetchBaseEventFilters());
+    }
+  }, [dispatch, filters.location]);
+
+  /* ----------------------------- Render ----------------------------- */
   return (
     <>
       <Navbar />
@@ -71,10 +138,13 @@ export default function Events() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 space-y-6">
+
+            {/* ROW 1 — Search + Sort */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Search */}
-              <div className="lg:col-span-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500">Search</label>
                 <div className="relative">
                   <i className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                     <SearchOutlineIcon />
@@ -82,78 +152,143 @@ export default function Events() {
                   <input
                     type="text"
                     placeholder="Search events, locations, organizers..."
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const value = searchInput.trim();
+                        value ? navigate(`/events/search/${value}`) : navigate("/events");
+                      }
+                    }}
                   />
+                  {searchInput.trim().length > 0 && (
+                    <span className="absolute right-3 bottom-1 text-[11px] text-gray-400 pointer-events-none">
+                      Press Enter
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* Category */}
-              <div>
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  <option value="">All Categories</option>
-                  <option value="Music & Concerts">Music & Concerts</option>
-                  <option value="Technology">Technology</option>
-                  <option value="Sports & Fitness">Sports & Fitness</option>
-                  <option value="Arts & Culture">Arts & Culture</option>
-                  <option value="Food & Drink">Food & Drink</option>
-                  <option value="Business">Business</option>
-                  <option value="Education">Education</option>
-                  <option value="Health & Wellness">Health & Wellness</option>
-                </select>
+              {/* Sort By */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500">Sort by</label>
+                <RoundedDropdown
+                  label={{
+                    date: "Date",
+                    price: "Price",
+                    popularity: "Popularity",
+                    rating: "Rating",
+                    title: "Title",
+                  }[filters.sortBy]}
+                  value={filters.sortBy}
+                  options={[
+                    { label: "Date", value: "date" },
+                    { label: "Price", value: "price" },
+                    { label: "Popularity", value: "popularity" },
+                    { label: "Rating", value: "rating" },
+                    { label: "Title", value: "title" },
+                  ]}
+                  onChange={(value) =>
+                    setFilters((prev) => ({ ...prev, sortBy: value }))
+                  }
+                />
               </div>
 
-              {/* Location */}
-              <div>
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+              {/* Order */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500">Order</label>
+                <button
+                  onClick={() =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      order: prev.order === "asc" ? "desc" : "asc",
+                    }))
+                  }
+                  className="flex items-center justify-center gap-2 h-12 border border-gray-300 rounded-lg hover:border-purple-400 text-sm font-medium"
                 >
-                  <option value="">All Locations</option>
-                  <option value="New York">New York</option>
-                  <option value="San Francisco">San Francisco</option>
-                  <option value="Los Angeles">Los Angeles</option>
-                  <option value="Chicago">Chicago</option>
-                  <option value="Seattle">Seattle</option>
-                  <option value="Boston">Boston</option>
-                  <option value="Miami">Miami</option>
-                </select>
-              </div>
-
-              {/* Sort */}
-              <div>
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                >
-                  <option value="date">Sort by Date</option>
-                  <option value="price">Sort by Price</option>
-                  <option value="popularity">Sort by Popularity</option>
-                  <option value="rating">Sort by Rating</option>
-                  <option value="title">Sort by Title</option>
-                </select>
+                  {filters.order === "asc" ? (
+                    <>
+                      {/* Up Arrow */}
+                      Ascending
+                    </>
+                  ) : (
+                    <>
+                      {/* Down Arrow */}
+                      Descending
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* Results + View Toggle */}
-            <div className="flex items-center justify-between mb-6">
+            {/* ROW 2 — Category + Location + Apply */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Category */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500">Category</label>
+                <RoundedDropdown
+                  label={
+                    filterCategories.find(c => c.slug === filters.category)?.name
+                    || "All Categories"
+                  }
+                  value={filters.category}
+                  disabled={filtersLoading}
+                  options={[
+                    { label: "All Categories", value: "" },
+                    ...filterCategories.map(c => ({ label: c.name, value: c.slug }))
+                  ]}
+                  onChange={(value) =>
+                    setFilters(prev => ({ ...prev, category: value, location: "" }))
+                  }
+                />
+              </div>
+
+              {/* Location */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500">Location</label>
+                <RoundedDropdown
+                  label={filters.location || "All Locations"}
+                  value={filters.location}
+                  disabled={filtersLoading || !filterLocations.length}
+                  options={[
+                    { label: "All Locations", value: "" },
+                    ...filterLocations.map(l => ({ label: l, value: l }))
+                  ]}
+                  onChange={(value) =>
+                    setFilters(prev => ({ ...prev, location: value }))
+                  }
+                />
+              </div>
+
+              {/* Apply */}
+              <div className="flex flex-col gap-1 justify-end">
+                <button
+                  onClick={() => {
+                    let path = "/events";
+                    if (filters.category) path += `/category/${filters.category}`;
+                    if (filters.location) path += `/location/${filters.location}`;
+                    navigate(path);
+                  }}
+                  className="h-12 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+
+            {/* ROW 3 — Count + View */}
+            <div className="flex items-center justify-between pt-2">
               <span className="text-sm text-gray-600">
-                {filteredEvents.length} events found
+                {loading ? "Loading events..." : `${total} events found`}
               </span>
 
-              <div className="flex space-x-2">
+              <div className="flex gap-2">
                 <button
                   onClick={() => setView("grid")}
                   className={`p-2 rounded-lg ${view === "grid"
-                      ? "bg-purple-100 text-purple-600"
-                      : "text-gray-400"
+                    ? "bg-purple-100 text-purple-600"
+                    : "text-gray-400"
                     }`}
                 >
                   <GridIcon size={20} />
@@ -162,8 +297,8 @@ export default function Events() {
                 <button
                   onClick={() => setView("list")}
                   className={`p-2 rounded-lg ${view === "list"
-                      ? "bg-purple-100 text-purple-600"
-                      : "text-gray-400"
+                    ? "bg-purple-100 text-purple-600"
+                    : "text-gray-400"
                     }`}
                 >
                   <ListIcon size={20} />
@@ -172,17 +307,27 @@ export default function Events() {
             </div>
           </div>
 
-          {/* Grid/List */}
+          {/* Content */}
+          {error && (
+            <p className="text-red-500 text-sm">{error}</p>
+          )}
+
+          {!loading && events.length === 0 && (
+            <p className="text-gray-500 text-sm">
+              No events found for the selected filters.
+            </p>
+          )}
+
           {view === "grid" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredEvents.map((event) => (
-                <EventGridCard key={event.id} event={event} />
+              {sortedEvents.map((event) => (
+                <EventGridCard key={event._id} event={event} />
               ))}
             </div>
           ) : (
             <div className="space-y-6">
-              {filteredEvents.map((event) => (
-                <EventListCard key={event.id} event={event} />
+              {sortedEvents.map((event) => (
+                <EventListCard key={event._id} event={event} />
               ))}
             </div>
           )}

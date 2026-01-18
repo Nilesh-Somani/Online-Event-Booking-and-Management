@@ -76,6 +76,7 @@ import {
   RiNotification3Line,
   RiBuildingLine,
   RiShieldLine,
+  RiCommunityLine,
 } from "react-icons/ri";
 
 import {
@@ -454,3 +455,15 @@ export const SecurityIcon = ({ size = 18, className = "" }) => (
 
 // RiUserCommunityLine (previous UserIcon)
 // RiShieldUserLine (old AdminIcon)
+
+export const CommunityIcon = ({ size = 18, className = "" }) => {
+  <RiCommunityLine size={size} className={className} />
+}
+
+export const DefaultCategoryIcon = ({ size = 18, className = "" }) => {
+  <RiGridLine size={size} className={className} />
+}
+
+export const TravelIcon = ({ size = 18, className = "" }) => {
+  <RiBriefcaseLine size={size} className={className} />
+}

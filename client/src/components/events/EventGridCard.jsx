@@ -1,20 +1,22 @@
 import { Link } from "react-router-dom";
-import { StarIcon } from "../Icon";
+import { CalendarOutlineIcon, StarIcon, TimeIcon } from "../Icon";
 
 
 export default function EventGridCard({ event }) {
+  const minPrice = Math.min(...event.tickets.map(t => t.price));
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
       <div className="relative">
         <img
-          src={event.image}
+          src={event.images.card.url}
           alt={event.title}
           className="w-full h-48 object-cover"
         />
 
         <div className="absolute top-4 left-4">
           <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-            ${event.price}
+            ${minPrice}
           </span>
         </div>
 
@@ -24,17 +26,35 @@ export default function EventGridCard({ event }) {
             <span className="text-sm font-medium text-yellow-400">{event.rating}</span>
           </div>
         </div>
+
+        {event.bookingsCount > 0 && (
+          <div className="absolute bottom-4 left-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full">
+            {/* Popularity Icon */}
+            {event.bookingsCount} bookings
+          </div>
+        )}
+
       </div>
 
-      <div className="p-6">
-        <div className="text-sm text-gray-500 mb-2">{event.date}</div>
+      <div className="p-6 flex flex-col flex-1">
+        <div className="flex gap-4 text-sm text-gray-500 mb-2">
+          <div className="flex justify-center items-center gap-1">
+            <CalendarOutlineIcon /> {new Date(event.date).toLocaleDateString()}
+          </div>
+          <div className="flex justify-center items-center gap-1">
+            <TimeIcon /> {event.startTime}
+          </div>
+        </div>
 
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           {event.title}
         </h3>
 
-        <div className="text-gray-600 mb-2">{event.location}</div>
-        <div className="text-gray-600 mb-4">{event.organizer}</div>
+        <div className="text-gray-600 mb-2">{event.locationName}</div>
+        <div className="text-gray-600 mb-4">
+          {event.organizer?.profile?.firstName}{" "}
+          {event.organizer?.profile?.lastName}
+        </div>
 
         <div className="flex flex-wrap gap-2 mb-4">
           {event.tags.map(tag => (
@@ -47,13 +67,20 @@ export default function EventGridCard({ event }) {
           ))}
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-purple-600 font-medium">
-            {event.category}
+        <div className="mt-auto space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {event.categories?.map(cat => (
+              <span
+                key={cat._id}
+                className="px-2 py-1 text-xs rounded bg-purple-100 text-purple-700"
+              >
+                {cat.name}
+              </span>
+            ))}
           </div>
 
-          <Link to={`/events/${event.id}`}>
-            <button className="font-medium rounded-lg bg-linear-to-r from-purple-600 to-pink-600 text-white px-4 py-2 text-sm hover:from-purple-700 hover:to-pink-700">
+          <Link to={`/events/${event._id}`} className="block">
+            <button className="w-full font-medium rounded-lg bg-linear-to-r from-purple-600 to-pink-600 text-white py-2 text-sm hover:from-purple-700 hover:to-pink-700">
               View Details
             </button>
           </Link>

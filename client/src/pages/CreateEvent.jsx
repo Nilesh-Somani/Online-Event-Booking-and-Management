@@ -1,13 +1,120 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { InfoIcon, FileIcon, BookingsIcon, SuccessIcon, AddIcon, DeleteIcon, ImageIcon, ArrowLeftIcon, ArrowRightIcon, } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+
+const CardPreview = ({ image, title, date, location, onRemove, removable = false }) => (
+    <div className="relative max-w-sm">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <img src={image} className="w-full h-48 object-cover" />
+            <div className="p-4">
+                <div className="text-sm text-gray-500">{date || "Event Date"}</div>
+                <h3 className="font-semibold">{title || "Event Title"}</h3>
+                <div className="text-sm text-gray-600">
+                    {location || "Location"}
+                </div>
+            </div>
+        </div>
+
+        {removable && (
+            <button
+                type="button"
+                onClick={onRemove}
+                className="absolute top-2 right-2 bg-white/90 text-red-600 text-xs px-2 py-1 rounded hover:bg-red-600 hover:text-white"
+            >
+                Remove
+            </button>
+        )}
+    </div>
+);
+
+const CoverPreview = ({ image, title, date, location, onRemove, removable = false }) => (
+    <div className="relative h-56 rounded-lg overflow-hidden">
+        <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${image})` }}
+        />
+        <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+
+        <div className="absolute bottom-4 left-4 text-white">
+            <h3 className="text-xl font-bold">{title || "Event Title"}</h3>
+            <p className="text-sm">
+                {date || "Date"} • {location || "Location"}
+            </p>
+        </div>
+
+        {removable && (
+            <button
+                type="button"
+                onClick={onRemove}
+                className="absolute top-3 right-3 bg-white/90 text-red-600 text-xs px-3 py-1 rounded hover:bg-red-600 hover:text-white"
+            >
+                Remove
+            </button>
+        )}
+    </div>
+);
+
+const UploadBox = ({ label, onClick }) => (
+    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+        <ImageIcon className="mx-auto text-gray-400 mb-2" />
+        <p className="text-gray-600 mb-2">{label}</p>
+
+        <button
+            type="button"
+            onClick={onClick}
+            className="rounded-lg border-2 border-purple-600 text-purple-600 px-4 py-2 text-sm hover:bg-purple-600 hover:text-white"
+        >
+            Choose Image
+        </button>
+    </div>
+);
 
 export default function CreateEvent() {
     const [currentTab, setCurrentTab] = useState(0);
     const [tickets, setTickets] = useState([
         { name: "General Admission", price: "", quantity: "" },
     ]);
+
+    // -------- BASIC INFO STATE --------
+    const [title, setTitle] = useState("");
+    const [categories, setCategories] = useState([]);
+    const [tags, setTags] = useState([]);
+    const [description, setDescription] = useState("");
+
+    // -------- IMAGES --------
+    const [cardImage, setCardImage] = useState(null);
+    const [cardPreview, setCardPreview] = useState(cardImage);
+
+    const [coverImage, setCoverImage] = useState(null);
+    const [coverPreview, setCoverPreview] = useState(coverImage);
+
+    const [galleryImages, setGalleryImages] = useState([]);
+    const [galleryPreviews, setGalleryPreviews] = useState(galleryImages);
+
+    // -------- DETAILS STATE --------
+    const [date, setDate] = useState("");
+    const [startTime, setStartTime] = useState("");
+    const [duration, setDuration] = useState(0);
+    const [capacity, setCapacity] = useState("");
+    const [locationName, setLocationName] = useState("");
+    const [address, setAddress] = useState("");
+    const [isPublic, setIsPublic] = useState(true);
+    const [allowWaitList, setAllowWaitList] = useState(false);
+
+    const cardInputRef = useRef(null);
+    const coverInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
+
+    const ALL_CATEGORIES = {
+        "Music & Concerts": ["DJ", "Live", "EDM", "Rock"],
+        Technology: ["AI", "Web", "Cloud"],
+        Sports: ["Football", "Cricket"],
+    };
+
+    const availableTags = categories.length
+        ? [...new Set(categories.flatMap(cat => ALL_CATEGORIES[cat] || []))]
+        : ["Popular", "Trending", "Featured"];
 
     const nextTab = () => {
         if (currentTab < 3) setCurrentTab(currentTab + 1);
@@ -19,6 +126,73 @@ export default function CreateEvent() {
 
     const addTicket = () => {
         setTickets([...tickets, { name: "", price: "", quantity: "" }]);
+    };
+
+    const handleSingleImage = (file, setFile, setPreview) => {
+        if (!file) return;
+        setFile(file);
+        setPreview(URL.createObjectURL(file));
+    };
+
+    const handleGalleryImages = (files) => {
+        if (!files || files.length === 0) return;
+        const imgs = Array.from(files);
+        setGalleryImages(imgs);
+        setGalleryPreviews(imgs.map(f => URL.createObjectURL(f)));
+    };
+
+    const removeCardImage = () => {
+        setCardImage(null);
+        setCardPreview(null);
+        if (cardInputRef.current) cardInputRef.current.value = "";
+    };
+
+    const removeCoverImage = () => {
+        setCoverImage(null);
+        setCoverPreview(null);
+        if (coverInputRef.current) coverInputRef.current.value = "";
+    };
+
+    const removeGalleryImage = (index) => {
+        setGalleryImages(prev => prev.filter((_, i) => i !== index));
+        setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const safeNumber = (v, min = 0) => Math.max(Number(v) || 0, min);
+
+    const handleSubmit = async () => {
+        const cardUrl = await uploadImage(cardImage);
+        const coverUrl = await uploadImage(coverImage);
+
+        const galleryUrls = await Promise.all(
+            galleryImages.map(file => uploadImage(file))
+        );
+
+        const payload = {
+            durationHours: safeNumber(duration) || 0,
+            venue: {
+                name: locationName,
+                address: address,
+            },
+            images: {
+                card: { url: cardUrl },
+                cover: { url: coverUrl },
+                gallery: galleryUrls.map(url => ({ url })),
+            },
+            capacity: safeNumber(capacity, 1),
+            tickets: tickets.map(t => ({
+                ...t,
+                price: safeNumber(t.price, 0),
+                quantity: safeNumber(t.quantity, 1),
+            })),
+        };
+
+        console.log(payload);
+    };
+
+    const uploadImage = async (file) => {
+        // later: Cloudinary / S3
+        return URL.createObjectURL(file); // TEMP ONLY
     };
 
     return (
@@ -78,6 +252,8 @@ export default function CreateEvent() {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Event Title *</label>
                                     <input
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
                                         placeholder="Enter event title"
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         type="text"
@@ -86,45 +262,105 @@ export default function CreateEvent() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-                                    <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                                        <option value="">Select a category</option>
-                                        <option value="Music & Concerts">Music & Concerts</option>
-                                        <option value="Technology">Technology</option>
-                                        <option value="Sports & Fitness">Sports & Fitness</option>
-                                        <option value="Arts & Culture">Arts & Culture</option>
-                                        <option value="Food & Drink">Food & Drink</option>
-                                        <option value="Business">Business</option>
-                                        <option value="Education">Education</option>
-                                        <option value="Health & Wellness">Health & Wellness</option>
-                                        <option value="Travel & Outdoor">Travel & Outdoor</option>
-                                        <option value="Community">Community</option>
-                                    </select>
+                                    {Object.keys(ALL_CATEGORIES).map(cat => (
+                                        <label key={cat} className="flex  items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={categories.includes(cat)}
+                                                onChange={(e) => {
+                                                    setCategories(prev =>
+                                                        e.target.checked
+                                                            ? [...prev, cat]
+                                                            : prev.filter(c => c !== cat)
+                                                    );
+                                                }}
+                                            />
+                                            {cat}
+                                        </label>
+                                    ))}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Tags</label>
+                                    {availableTags.map(tag => (
+                                        <label key={tag} className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={tags.includes(tag)}
+                                                onChange={(e) => {
+                                                    setTags(prev =>
+                                                        e.target.checked
+                                                            ? [...prev, tag]
+                                                            : prev.filter(t => t !== tag)
+                                                    );
+                                                }}
+                                            />
+                                            {tag}
+                                        </label>
+                                    ))}
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Event Description *</label>
                                     <textarea
                                         rows="6"
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
                                         placeholder="Describe your event..."
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    ></textarea>
+                                    />
                                 </div>
 
+                                {/* CARD IMAGE (REQUIRED) */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Event Image</label>
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                        <ImageIcon className="text-gray-400 mb-2" />
-                                        <p className="text-gray-600 mb-2">Upload event image</p>
-                                        <input accept="image/*" className="hidden" id="image-upload" type="file" />
-                                        <label htmlFor="image-upload">
-                                            <button
-                                                type="button"
-                                                className="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-4 py-2 text-sm"
-                                            >
-                                                Choose File
-                                            </button>
-                                        </label>
-                                    </div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Card Image (Required)
+                                    </label>
+
+                                    {cardPreview ? (
+                                        <CardPreview
+                                            image={cardPreview}
+                                            title={title}
+                                            date={date}
+                                            location={locationName}
+                                            onRemove={removeCardImage}
+                                            removable={true}
+                                        />
+                                    ) : (
+                                        <>
+                                            <input ref={cardInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleSingleImage(e.target.files[0], setCardImage, setCardPreview)} />
+                                            <UploadBox
+                                                label="Upload card image"
+                                                onClick={() => cardInputRef.current.click()}
+                                            />
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* COVER IMAGE (REQUIRED) */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Cover Image (Required – Hero Banner)
+                                    </label>
+
+                                    {coverPreview ? (
+                                        <CoverPreview
+                                            image={coverPreview}
+                                            title={title}
+                                            date={date}
+                                            location={locationName}
+                                            onRemove={removeCoverImage}
+                                            removable={true}
+                                        />
+                                    ) : (
+                                        <>
+                                            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleSingleImage(e.target.files[0], setCoverImage, setCoverPreview)} />
+                                            <UploadBox
+                                                label="Upload cover image"
+                                                onClick={() => coverInputRef.current.click()}
+                                            />
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -139,6 +375,8 @@ export default function CreateEvent() {
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
                                         <input
                                             type="date"
+                                            value={date}
+                                            onChange={(e) => setDate(e.target.value)}
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         />
                                     </div>
@@ -146,6 +384,8 @@ export default function CreateEvent() {
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
                                         <input
                                             type="time"
+                                            value={startTime}
+                                            onChange={(e) => setStartTime(e.target.value)}
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         />
                                     </div>
@@ -154,6 +394,9 @@ export default function CreateEvent() {
                                         <input
                                             placeholder="2"
                                             type="number"
+                                            value={duration}
+                                            min={1}
+                                            onChange={(e) => setDuration(e.target.value)}
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         />
                                     </div>
@@ -162,6 +405,9 @@ export default function CreateEvent() {
                                         <input
                                             placeholder="100"
                                             type="number"
+                                            value={capacity}
+                                            min={1}
+                                            onChange={(e) => setCapacity(e.target.value)}
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         />
                                     </div>
@@ -173,6 +419,8 @@ export default function CreateEvent() {
                                         placeholder="Convention Center"
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         type="text"
+                                        value={locationName}
+                                        onChange={(e) => setLocationName(e.target.value)}
                                     />
                                 </div>
 
@@ -182,6 +430,8 @@ export default function CreateEvent() {
                                         placeholder="123 Main Street, City, State"
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         type="text"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
                                     />
                                 </div>
 
@@ -190,6 +440,8 @@ export default function CreateEvent() {
                                         <input
                                             id="isPublic"
                                             type="checkbox"
+                                            value={isPublic}
+                                            onChange={(e) => setIsPublic(e.target.checked)}
                                             className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                                             defaultChecked
                                         />
@@ -201,12 +453,66 @@ export default function CreateEvent() {
                                         <input
                                             id="allowWaitList"
                                             type="checkbox"
+                                            value={allowWaitList}
+                                            onChange={(e) => setAllowWaitList(e.target.checked)}
                                             className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                                         />
                                         <label htmlFor="allowWaitList" className="ml-2 text-sm text-gray-700">
                                             Allow wait list when sold out
                                         </label>
                                     </div>
+                                </div>
+
+                                {/* GALLERY IMAGES (OPTIONAL) */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Optional Gallery Image(s)
+                                    </label>
+
+                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                        <ImageIcon className="mx-auto text-gray-400 mb-2" />
+                                        <p className="text-gray-600 mb-2">
+                                            Upload optional images (multiple allowed)
+                                        </p>
+
+                                        <input
+                                            ref={galleryInputRef}
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => handleGalleryImages(e.target.files)}
+                                        />
+
+                                        <button
+                                            type="button"
+                                            onClick={() => galleryInputRef.current.click()}
+                                            className="rounded-lg border-2 border-purple-600 text-purple-600 px-4 py-2 text-sm hover:bg-purple-600 hover:text-white"
+                                        >
+                                            Choose Images
+                                        </button>
+                                    </div>
+
+                                    {/* Ordinary Preview */}
+                                    {galleryPreviews.length > 0 && (
+                                        <div className="grid grid-cols-3 gap-4 mt-4">
+                                            {galleryPreviews.map((img, i) => (
+                                                <div key={i} className="relative">
+                                                    <img
+                                                        src={img}
+                                                        className="h-32 w-full object-cover rounded-lg border"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeGalleryImage(i)}
+                                                        className="absolute top-1 right-1 bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -265,6 +571,7 @@ export default function CreateEvent() {
                                                         placeholder="50"
                                                         type="number"
                                                         value={ticket.price}
+                                                        min={1}
                                                         onChange={(e) => {
                                                             const updated = [...tickets];
                                                             updated[idx].price = e.target.value;
@@ -279,6 +586,7 @@ export default function CreateEvent() {
                                                         placeholder="100"
                                                         type="number"
                                                         value={ticket.quantity}
+                                                        min={1}
                                                         onChange={(e) => {
                                                             const updated = [...tickets];
                                                             updated[idx].quantity = e.target.value;
@@ -302,22 +610,74 @@ export default function CreateEvent() {
                                 {/* Event Basic Info */}
                                 <div className="p-4 border border-gray-200 rounded-lg">
                                     <h3 className="font-medium mb-2">Basic Information</h3>
-                                    <p><span className="font-semibold">Title:</span> {/* title state here */}</p>
-                                    <p><span className="font-semibold">Category:</span> {/* category state here */}</p>
-                                    <p><span className="font-semibold">Description:</span> {/* description state here */}</p>
-                                    <p><span className="font-semibold">Event Image:</span> {/* filename or preview */}</p>
+                                    <p><span className="font-semibold">Title:</span> {title}</p>
+                                    <p><span className="font-semibold">Category:</span> {categories.join(", ")}</p>
+                                    <p>
+                                        <span className="font-semibold">Tags:</span>{" "}
+                                        {tags.join(", ")}
+                                    </p>
+                                    <p><span className="font-semibold">Description:</span> {description}</p>
+                                    {(cardPreview || coverPreview) && (
+                                        <div className="mt-2 p-4 border border-gray-200 rounded-lg">
+                                            {/* Card */}
+                                            {cardPreview && (
+                                                <>
+                                                    <p className="font-semibold mb-2">Card Image</p>
+                                                    <CardPreview
+                                                        image={cardPreview}
+                                                        title={title}
+                                                        date={date}
+                                                        location={locationName}
+                                                        onRemove={removeCardImage}
+                                                        removable={false}
+                                                    />
+                                                </>
+                                            )}
+
+                                            {/* Cover */}
+                                            {coverPreview && (
+                                                <>
+                                                    <p className={`font-semibold mb-2 ${cardPreview ? "mt-6" : "mt-0"}`}>Cover Image</p>
+                                                    <CoverPreview
+                                                        image={coverPreview}
+                                                        title={title}
+                                                        date={date}
+                                                        location={locationName}
+                                                        onRemove={removeCoverImage}
+                                                        removable={false}
+                                                    />
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Event Details */}
                                 <div className="p-4 border border-gray-200 rounded-lg">
                                     <h3 className="font-medium mb-2">Event Details</h3>
-                                    <p><span className="font-semibold">Date:</span> {/* date state */}</p>
-                                    <p><span className="font-semibold">Start Time:</span> {/* start time state */}</p>
-                                    <p><span className="font-semibold">Duration:</span> {/* duration state */}</p>
-                                    <p><span className="font-semibold">Capacity:</span> {/* capacity state */}</p>
-                                    <p><span className="font-semibold">Location:</span> {/* location name + address state */}</p>
-                                    <p><span className="font-semibold">Public Event:</span> {/* isPublic state */}</p>
-                                    <p><span className="font-semibold">Allow Wait List:</span> {/* allowWaitList state */}</p>
+                                    <p><span className="font-semibold">Date:</span> {date}</p>
+                                    <p><span className="font-semibold">Start Time:</span> {startTime}</p>
+                                    <p><span className="font-semibold">Duration:</span> {duration}</p>
+                                    <p><span className="font-semibold">Capacity:</span> {capacity}</p>
+                                    <p><span className="font-semibold">Location:</span> {locationName}, {address}</p>
+                                    <p><span className="font-semibold">Public Event:</span> {isPublic ? "Yes" : "No"}</p>
+                                    <p><span className="font-semibold">Allow Wait List:</span> {allowWaitList ? "Yes" : "No"}</p>
+                                    {/* Gallery */}
+                                    {galleryPreviews.length > 0 && (
+                                        <div className="mt-2 p-4 border border-gray-200 rounded-lg">
+                                            <p className="font-semibold mb-2">Gallery Images</p>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {galleryPreviews.map((img, i) => (
+                                                    <div key={i} className="relative">
+                                                        <img
+                                                            src={img}
+                                                            className="h-24 w-full object-cover rounded border"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Tickets */}
@@ -347,7 +707,7 @@ export default function CreateEvent() {
                             </button>
                             <button
                                 type="button"
-                                onClick={nextTab}
+                                onClick={currentTab < 3 ? nextTab : handleSubmit}
                                 className={`font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer px-6 py-3 text-base bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl`}
                             >
                                 {currentTab < 3 ? "Next" : "Finish"}
