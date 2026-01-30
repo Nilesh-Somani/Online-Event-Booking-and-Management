@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Ticket</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Inter, Arial, sans-serif;
+            background: #f8fafc;
+            margin: 0;
+            padding: 24px;
+        }
+
+        .ticket {
+            width: 100%;
+            max-width: 1000px;
+            margin: auto;
+            border-radius: 16px;
+            overflow: hidden;
+            background: white;
+            border: 1px solid #e5e7eb;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #7c3aed, #ec4899);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            padding: 24px;
+        }
+
+        .section h3 {
+            margin: 0 0 8px;
+            font-size: 18px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .qr {
+            border: 2px dashed #d1d5db;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .footer {
+            padding: 16px;
+            background: #f9fafb;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ticket">
+        <div class="header">
+            <h1>EVENT TICKET</h1>
+            <p>Powered by EventHub</p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h3>{{eventTitle}}</h3>
+                <div class="row"><span>Date</span><span>{{eventDate}}</span></div>
+                <div class="row"><span>Venue</span><span>{{venue}}</span></div>
+
+                <hr />
+
+                <div class="row"><span>Name</span><span>{{name}}</span></div>
+                <div class="row"><span>Email</span><span>{{email}}</span></div>
+                <div class="row"><span>Ticket</span><span>{{ticket}}</span></div>
+                <div class="row"><span>Qty</span><span>{{qty}}</span></div>
+                <div class="row"><strong>Paid</strong><strong>₹{{amount}}</strong></div>
+            </div>
+
+            <div class="qr">
+                <img src="{{qrCode}}" alt="QR" width="180" />
+                <p>Scan at entry</p>
+                <small>{{bookingId}}</small>
+            </div>
+        </div>
+
+        <div class="footer">
+            Please arrive 30 minutes early • Non-transferable • Support: support@eventhub.com
+        </div>
+    </div>
+
+</body>
+
+</html>

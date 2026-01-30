@@ -1,28 +1,54 @@
 import Booking from "../models/Booking.js";
-import Event from "../models/Event.js";
+import path from "path";
+import fs from "fs";
 
-export const createBooking = async (req, res) => {
-    const { eventId, seats } = req.body;
-    const event = await Event.findById(eventId);
+/* USER BOOKINGS */
+export const getMyBookings = async (req, res) => {
+    const bookings = await Booking.find({ user: req.user._id })
+        .populate("event", "title date location")
+        .sort({ createdAt: -1 });
 
-    if (!event || event.availableSeats < seats)
-        return res.status(400).json({ message: "Not enough seats" });
-
-    event.availableSeats -= seats;
-    await event.save();
-
-    const booking = await Booking.create({
-        user: req.user.id,
-        event: eventId,
-        seats,
-        amountPaid: seats * event.price,
-        paymentStatus: "paid",
-    });
-
-    res.status(201).json(booking);
+    res.json(bookings);
 };
 
-export const getMyBookings = async (req, res) => {
-    const bookings = await Booking.find({ user: req.user.id }).populate("event");
+/* ORGANIZER BOOKINGS */
+export const getOrganizerBookings = async (req, res) => {
+    const bookings = await Booking.find({ organizer: req.user._id })
+        .populate("event", "title date")
+        .sort({ createdAt: -1 });
+
     res.json(bookings);
+};
+
+/* ADMIN */
+export const getAllBookings = async (req, res) => {
+    const bookings = await Booking.find()
+        .populate("event user organizer")
+        .sort({ createdAt: -1 });
+
+    res.json(bookings);
+};
+
+export const downloadTicket = async (req, res) => {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.sendStatus(404);
+
+    if (
+        booking.user.toString() !== req.user._id.toString() &&
+        booking.organizer.toString() === req.user._id.toString()
+    ) {
+        return res.sendStatus(403);
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=ticket-${booking._id}.pdf`
+    );
+
+    const stream = fs.createReadStream(
+        path.join(process.cwd(), booking.ticketPdf)
+    );
+
+    stream.pipe(res);
 };

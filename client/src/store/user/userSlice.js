@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { setAuthUser } from "../auth/authSlice";
-import { API_BASE_URL } from "../../api/api";
+import axios from "../../api/axios";
 
 /* =========================================================
    GET CURRENT USER (ME)
@@ -9,20 +9,13 @@ export const getMe = createAsyncThunk(
     "user/getMe",
     async (_, { dispatch, rejectWithValue }) => {
         try {
-            const token = localStorage.getItem("authToken");
-            const res = await fetch(`${API_BASE_URL}/api/users/me`, {
-                credentials: "include",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            const data = await res.json();
-            if (!res.ok) return rejectWithValue(data.message);
-            dispatch(setAuthUser(data))
-            return data;
+            const res = await axios.get("/users/me");
+            dispatch(setAuthUser(res.data));
+            return res.data;
         } catch (err) {
-            return rejectWithValue("Failed to fetch user");
+            return rejectWithValue(
+                err.response?.data?.message || "Failed to fetch user"
+            );
         }
     }
 );
@@ -34,19 +27,12 @@ export const updateProfile = createAsyncThunk(
     "user/updateProfile",
     async (payload, { rejectWithValue }) => {
         try {
-            const token = localStorage.getItem("authToken");
-            const res = await fetch(`${API_BASE_URL}/api/users/profile`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, },
-                credentials: "include",
-                body: JSON.stringify(payload),
-            });
-
-            const data = await res.json();
-            if (!res.ok) return rejectWithValue(data.message);
-            return data;
+            const res = await axios.put("/users/profile", payload);
+            return res.data;
         } catch (err) {
-            return rejectWithValue("Profile update failed");
+            return rejectWithValue(
+                err.response?.data?.message || "Profile update failed"
+            );
         }
     }
 );
@@ -58,22 +44,12 @@ export const updateOrganizerProfile = createAsyncThunk(
     "user/updateOrganizerProfile",
     async (payload, { rejectWithValue }) => {
         try {
-            const token = localStorage.getItem("authToken");
-            const res = await fetch(
-                `${API_BASE_URL}/api/users/organizer`,
-                {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, },
-                    credentials: "include",
-                    body: JSON.stringify(payload),
-                }
-            );
-
-            const data = await res.json();
-            if (!res.ok) return rejectWithValue(data.message);
-            return data;
+            const res = await axios.put("/users/organizer", payload);
+            return res.data;
         } catch (err) {
-            return rejectWithValue("Organizer profile update failed");
+            return rejectWithValue(
+                err.response?.data?.message || "Organizer profile update failed"
+            );
         }
     }
 );
@@ -85,19 +61,12 @@ export const updateSettings = createAsyncThunk(
     "user/updateSettings",
     async (payload, { rejectWithValue }) => {
         try {
-            const token = localStorage.getItem("authToken");
-            const res = await fetch(`${API_BASE_URL}/api/users/settings`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, },
-                credentials: "include",
-                body: JSON.stringify(payload),
-            });
-
-            const data = await res.json();
-            if (!res.ok) return rejectWithValue(data.message);
-            return data;
+            const res = await axios.put("/users/settings", payload);
+            return res.data;
         } catch (err) {
-            return rejectWithValue("Settings update failed");
+            return rejectWithValue(
+                err.response?.data?.message || "Settings update failed"
+            );
         }
     }
 );

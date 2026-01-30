@@ -12,21 +12,23 @@ import ProtectedRoute from "./components/ProtectedRoutes";
 import GuestRoute from "./components/GuestRoute";
 
 // User Accessible Pages Imports
+import UserDashboard from "./pages/UserDashboard";
 import Booking from "./pages/Booking";
 import MyBookings from "./pages/MyBookings";
 import OrganizerApplication from "./pages/OrganizerApplication";
 
 // Organizer Accessible Page Imports
-import OrganizerDashboard from "./pages/OrganizerDashboard";
 import CreateEvent from "./pages/CreateEvent";
 import OrganizerAttendees from "./pages/OrganizerAttendees";
 
 // Admin Accessible Page Imports
-import AdminPanel from "./pages/AdminPanel";
 
 // Role-Based Accessible Page Imports
+import DashboardResolver from "./pages/DashboardResolver";
 import Analytics from "./pages/Analytics";
 import UserSettings from "./pages/UserSettings";
+
+import NotFound from "./pages/NotFound";
 
 export default function App() {
   return (
@@ -38,13 +40,17 @@ export default function App() {
       <Route path="/events/category/:category" element={<Events />} />
       <Route path="/events/search/:search" element={<Events />} />
       <Route path="/events/location/:location" element={<Events />} />
+      {/* Date filter */}
+      <Route path="/events/date/:dateFrom" element={<Events />} />
+      <Route path="/events/date/:dateFrom/to/:dateTo" element={<Events />} />
+
       {/* Event Page's Combined Filters Routes  */}
-      <Route path="/events/category/:category/location/:location" element={<Events />} />
-      <Route path="/events/search/:search/location/:location" element={<Events />} />
       <Route path="/events/:filterType/:filterValue/:filterType2/:filterValue2" element={<Events />} />
+      <Route path="/events/:filterType/:filterValue/date/:dateFrom" element={<Events />} />
+      <Route path="/events/:filterType/:filterValue/date/:dateFrom/to/:dateTo" element={<Events />} />
 
       <Route path="/events/:eventId" element={<EventDetails />} />
-      
+
       <Route path="/categories" element={<Categories />} />
 
       <Route path="/auth" element={
@@ -53,8 +59,8 @@ export default function App() {
         </GuestRoute>
       } />
 
-      <Route path="/booking" element={
-        <ProtectedRoute allowedRoles={["user", "organizer"]}>
+      <Route path="/booking/:id" element={
+        <ProtectedRoute allowedRoles={["user"]}>
           <Booking />
         </ProtectedRoute>
       } />
@@ -69,11 +75,6 @@ export default function App() {
         </ProtectedRoute>
       } />
 
-      <Route path="/organizer" element={
-        <ProtectedRoute allowedRoles={["organizer"]}>
-          <OrganizerDashboard />
-        </ProtectedRoute>
-      } />
       <Route path="/create-event" element={
         <ProtectedRoute allowedRoles={["organizer"]}>
           <CreateEvent />
@@ -85,14 +86,13 @@ export default function App() {
         </ProtectedRoute>
       } />
 
-      <Route path="/admin" element={
-        <ProtectedRoute allowedRoles={["admin"]}>
-          <AdminPanel />
+      <Route path="/dashboard" element={
+        <ProtectedRoute allowedRoles={["user", "organizer", "admin"]}>
+          <DashboardResolver />
         </ProtectedRoute>
       } />
-
       <Route path="/analytics" element={
-        <ProtectedRoute allowedRoles={["organizer", "admin"]}>
+        <ProtectedRoute allowedRoles={["user", "organizer", "admin"]}>
           <Analytics />
         </ProtectedRoute>
       } />
@@ -102,7 +102,7 @@ export default function App() {
         </ProtectedRoute>
       } />
 
-      <Route path="*" element={<Navigate to='/' replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

@@ -1,35 +1,89 @@
-import { useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useLocation, useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { AddIcon, MinusIcon, CardIcon, PaypalIcon, ApplePayIcon, SuccessIcon, DownloadIcon, SecureIcon, RefundIcon, VerifiedIcon, BookingsIcon, InfoIcon, MoneyIcon, ArrowLeftIcon, HomeOutlineIcon, } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useDispatch, useSelector } from "react-redux";
+import { usePayment } from "../hooks/usePayment";
+import { fetchEventById } from "../store/events/eventsSlice";
+import { downloadTicket } from "../store/booking/bookingSlice";
+import { verifyPayment } from "../store/payment/paymentSlice";
+
+const STEP = { TICKETS: 1, DETAILS: 2, PAYMENT: 3, CONFIRMED: 4 };
 
 export default function Booking() {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const { id: eventId } = useParams();
     const location = useLocation();
-    const { event, ticket: initialTicket, quantity: initialQty } = location.state || {};
-    const [step, setStep] = useState(1); // 1: Tickets, 2: Details, 3: Payment, 4: Confirmation
-    const [ticketType, setTicketType] = useState(initialTicket || event.tickets[0]);
+    const authUser = useSelector(state => state.auth.user);
+    const bookingId = useSelector(state => state.payment.lastBookingId) || localStorage.getItem("lastBookingId");
+    const pendingPayment = JSON.parse(localStorage.getItem("pendingPayment"));
+    const initialQty = location.state?.quantity || 1;
+    const event = useSelector(state => state.events.selectedEvent);
+    const eventLoading = useSelector(state => state.events.loading);
+    const [ticketName, setTicketName] = useState(
+        location.state?.ticket?.name
+    );
+    const ticketType = event?.tickets.find(t => t.name === ticketName);
     const [quantity, setQuantity] = useState(initialQty || 1);
-    const [attendee, setAttendee] = useState({
-        first_name: "",
-        last_name: "",
-        email: "",
-        phone: "",
+    const [attendee, setAttendee] = useState(() => ({
+        first_name: authUser?.profile?.firstName || "",
+        last_name: authUser?.profile?.lastName || "",
+        email: authUser?.email || "",
+        phone: authUser?.profile?.phone || "",
         billing_address: "",
         city: "",
         state: "",
         zip_code: "",
-    });
-    const [paymentInfo, setPaymentInfo] = useState({
-        cardNumber: "",
-        expiry: "",
-        cvv: "",
-        saveCard: false,
-        agreeTerms: false,
-    });
-    const [loading, setLoading] = useState(false);
+    }));
+    const hasPendingPayment = Boolean(pendingPayment?.orderId);
+    const [step, setStep] = useState(() => hasPendingPayment ? STEP.PAYMENT : STEP.TICKETS);
+    const { startPayment, loading } = usePayment();
+
+    useEffect(() => {
+        if (eventId) dispatch(fetchEventById(eventId));
+    }, [dispatch, eventId]);
+
+    useEffect(() => {
+        if (pendingPayment?.orderId && step === STEP.PAYMENT) {
+            dispatch(verifyPayment({ razorpay_order_id: pendingPayment.orderId }));
+        }
+    }, [dispatch, pendingPayment?.orderId, step]);
+
+    if (!eventId) {
+        return (
+            <>
+                <Navbar />
+                <div className="mt-32 text-center">
+                    <p className="text-gray-600 mb-4">
+                        Booking session expired.
+                    </p>
+                    <Link
+                        to="/events"
+                        className="text-purple-600 font-medium"
+                    >
+                        Go back to events
+                    </Link>
+                </div>
+                <Footer />
+            </>
+        );
+    }
+
 
     if (!event) {
+        if (eventLoading) {
+            setTimeout(() => {
+                return (
+                    <>
+                        <Navbar />
+                        <div className="mt-32 text-center text-gray-600">Loading event…</div>
+                        <Footer />
+                    </>
+                )
+            }, 5000)
+        }
         return (
             <>
                 <Navbar />
@@ -39,26 +93,46 @@ export default function Booking() {
         );
     }
 
+
     const totalPrice = ticketType ? (ticketType.price * quantity).toFixed(2) : 0;
     const serviceFee = ticketType ? (ticketType.price * quantity * 0.1).toFixed(2) : 0;
     const tax = ticketType ? (ticketType.price * quantity * 0.08).toFixed(2) : 0;
     const grandTotal = ticketType ? (ticketType.price * quantity * 1.18).toFixed(2) : 0;
 
-    const handleNext = () => {
-        if (step < 4) setStep(step + 1);
-    };
-    const handleBack = () => {
-        if (step > 1) setStep(step - 1);
-    };
+    const displayLocation =
+        event.location?.physical?.venueSnapshot?.name ||
+        (event.location?.mode === "online" ? "Online Event" : "Venue");
+
+    const handleNext = () => setStep(prev => Math.min(prev + 1, STEP.CONFIRMED));
+    const handleBack = () => setStep(prev => Math.max(prev - 1, STEP.TICKETS));
 
     const handleCompleteBooking = () => {
-        setLoading(true);
-        setTimeout(() => {
-            setStep(4);
-            setLoading(false);
-        }, 1000); // 1-second animation
+        startPayment({
+            event,
+            ticketType,
+            quantity,
+            attendee,
+            onSuccess: (bookingId) => {
+                localStorage.setItem("lastBookingId", bookingId);
+                localStorage.removeItem("pendingPayment");
+                setStep(4);
+            },
+            onFailure: (msg) => alert(msg),
+        });
     };
 
+    const handleDownloadTicket = async () => {
+        try {
+            await dispatch(downloadTicket(bookingId)).unwrap();
+
+            localStorage.removeItem("pendingPayment");
+            localStorage.removeItem("lastBookingId");
+
+            navigate("/mybookings", { replace: true });
+        } catch {
+            alert("Failed to download ticket");
+        }
+    };
 
     return (
         <>
@@ -118,30 +192,28 @@ export default function Booking() {
                                     <div className="space-y-4 mb-6">
                                         {event.tickets.map((t) => (
                                             <div
-                                                key={t.id}
-                                                onClick={() => setTicketType(t)}
-                                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${ticketType.id === t.id
-                                                    ? "border-purple-600 bg-purple-50"
-                                                    : "border-gray-200 hover:border-gray-300"
-                                                    }`}
+                                                onClick={() => setTicketName(t.name)}
+                                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${ticketType.name == t.name ? "border-purple-600 bg-purple-50" : "border-gray-200 hover:border-gray-300"}`}
                                             >
-                                                <div className="flex items-center justify-between">
+                                                <label className="flex items-center justify-between cursor-pointer">
                                                     <div>
-                                                        <h3 className="font-semibold text-gray-900">{t.label}</h3>
-                                                        <p className="text-gray-600 text-sm">{t.description}</p>
+                                                        <h3 className="font-semibold text-gray-900">{t.name}</h3>
                                                     </div>
+
                                                     <div className="text-right">
-                                                        <div className="text-xl font-bold text-purple-600">${t.price}</div>
+                                                        <div className="text-xl font-bold text-purple-600">
+                                                            ${t.price}
+                                                        </div>
+
                                                         <input
                                                             type="radio"
-                                                            value={t.id}
-                                                            checked={ticketType.id === t.id}
-                                                            readOnly
                                                             name="ticketType"
+                                                            value={t.name}
+                                                            checked={ticketType?.name === t.name}
                                                             className="mt-2"
                                                         />
                                                     </div>
-                                                </div>
+                                                </label>
                                             </div>
                                         ))}
                                     </div>
@@ -258,7 +330,7 @@ export default function Booking() {
                                             Back
                                         </button>
                                         <button
-                                            onClick={handleNext}
+                                            onClick={() => setStep(STEP.PAYMENT)}
                                             className="font-medium rounded-lg bg-linear-to-r from-purple-600 to-pink-600 text-white px-6 py-3"
                                         >
                                             Continue to Payment
@@ -267,144 +339,109 @@ export default function Booking() {
                                 </div>
                             )}
 
-                            {/* Step 3: Payment */}
                             {step === 3 && (
                                 <div className="bg-white rounded-lg border border-gray-200 p-8">
-                                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Information</h2>
-                                    <div className="mb-6 flex space-x-4">
-                                        <button type="button" className="flex-1 p-4 border-2 border-purple-600 bg-purple-50 rounded-lg flex items-center justify-center space-x-2">
-                                            <CardIcon size={22} /><span>Credit Card</span>
-                                        </button>
-                                        <button type="button" className="flex-1 p-4 border-2 border-gray-200 rounded-lg flex items-center justify-center space-x-2 hover:border-gray-300">
-                                            <PaypalIcon size={22} /><span>PayPal</span>
-                                        </button>
-                                        <button type="button" className="flex-1 p-4 border-2 border-gray-200 rounded-lg flex items-center justify-center space-x-2 hover:border-gray-300">
-                                            <ApplePayIcon size={22} /><span>Apple Pay</span>
-                                        </button>
-                                    </div>
-                                    <div>
-                                        <span>Card Number *</span>
-                                        <input
-                                            placeholder="1234 5678 9012 3456"
-                                            value={paymentInfo.cardNumber}
-                                            onChange={(e) =>
-                                                setPaymentInfo({ ...paymentInfo, cardNumber: e.target.value })
-                                            }
-                                            className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                    <div className="flex gap-4 mb-4">
-                                        <div>
-                                            <span>Expiry Date *</span>
-                                            <input
-                                                placeholder="MM/YY"
-                                                value={paymentInfo.expiry}
-                                                onChange={(e) =>
-                                                    setPaymentInfo({ ...paymentInfo, expiry: e.target.value })
-                                                }
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                            />
+                                    <h2 className="text-2xl font-bold mb-6">Payment</h2>
+                                    <div className="mb-4 p-4 bg-yellow-50 border rounded">
+                                        <p className="text-sm text-center">
+                                            {loading ? "Processing Your Payment" : "You have an unfinished payment."}
+                                        </p>
+                                        <div className="flex justify-between mt-4">
+                                            <button
+                                                disabled={loading}
+                                                onClick={handleCompleteBooking}
+                                                className="font-medium rounded-lg bg-linear-to-r from-purple-600 to-pink-600 text-white px-6 py-3"
+                                            >
+                                                {pendingPayment ? "Resume Payment" : "Pay"}
+                                            </button>
+                                            <button
+                                                disabled={loading}
+                                                onClick={() => {
+                                                    localStorage.removeItem("pendingPayment");
+                                                    setStep(2);
+                                                }}
+                                                className="font-medium rounded-lg bg-linear-to-r from-purple-600 to-pink-600 px-6 py-3 text-white"
+                                            >
+                                                Cancel Payment (Back to Details)
+                                            </button>
                                         </div>
-                                        <div>
-                                            <span>CVV *</span>
-                                            <input
-                                                placeholder="123"
-                                                value={paymentInfo.cvv}
-                                                onChange={(e) =>
-                                                    setPaymentInfo({ ...paymentInfo, cvv: e.target.value })
-                                                }
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="mb-6">
-                                        <label className="flex items-center">
-                                            <input type="checkbox" className="mr-3 rounded" checked={paymentInfo.saveCard} onChange={e => setPaymentInfo({ ...paymentInfo, saveCard: e.target.checked })} />
-                                            <span className="text-sm text-gray-700">Save card for future bookings</span>
-                                        </label>
-                                    </div>
-
-                                    <div className="mb-6">
-                                        <label className="flex items-start">
-                                            <input type="checkbox" required className="mr-3 mt-1 rounded" checked={paymentInfo.agreeTerms} onChange={e => setPaymentInfo({ ...paymentInfo, agreeTerms: e.target.checked })} />
-                                            <span className="text-sm text-gray-700">I agree to the <a href="#" className="text-purple-600 hover:underline">Terms & Conditions</a> and <a href="#" className="text-purple-600 hover:underline">Privacy Policy</a></span>
-                                        </label>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <button
-                                            onClick={handleBack}
-                                            className="flex items-center gap-2 font-medium rounded-lg border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3"
-                                        >
-                                            <ArrowLeftIcon />
-                                            Back
-                                        </button>
-                                        <button
-                                            onClick={handleCompleteBooking}
-                                            className="font-medium rounded-lg bg-linear-to-r from-purple-600 to-pink-600 text-white px-6 py-3"
-                                        >
-                                            {loading ? "Processing..." : "Complete Booking"}
-                                        </button>
                                     </div>
                                 </div>
                             )}
 
                             {/* Step 4: Confirmation */}
                             {step === 4 && (
-                                <form>
-                                    <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                            <SuccessIcon size={32} className="text-green-600" />
-                                        </div>
-                                        <h2 className="text-3xl font-bold text-gray-900 mb-4">Booking Confirmed!</h2>
-                                        <p className="text-gray-600 mb-6">
-                                            Your tickets have been booked successfully. A confirmation email has been sent to {attendee.email}.
-                                        </p>
+                                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <SuccessIcon size={32} className="text-green-600" />
+                                    </div>
+                                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Booking Confirmed!</h2>
+                                    <p className="text-gray-600 mb-6">
+                                        Your tickets have been booked successfully. A confirmation email has been sent to {attendee.email}.
+                                    </p>
 
-                                        <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-                                            <h3 className="text-center font-bold text-gray-900 mb-2">Booking Details</h3>
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between">
-                                                    <span>Event:</span>
-                                                    <span className="font-medium">{event.title}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Date:</span>
-                                                    <span className="font-medium">{event.date}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Venue:</span>
-                                                    <span className="font-medium">{event.location}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Tickets:</span>
-                                                    <span className="font-medium">{quantity} × {ticketType.label}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Total:</span>
-                                                    <span className="font-medium">${grandTotal}</span>
-                                                </div>
+                                    <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
+                                        <h3 className="text-center font-bold text-gray-900 mb-2">Booking Details</h3>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between">
+                                                <span>Event:</span>
+                                                <span className="font-medium">{event.title}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Date:</span>
+                                                <span className="font-medium">{event.date}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Venue:</span>
+                                                <span className="font-medium">{displayLocation}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Tickets:</span>
+                                                <span className="font-medium">{quantity} × {ticketType.name}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Total:</span>
+                                                <span className="font-medium">${grandTotal}</span>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="space-y-4">
+                                    <div className="space-y-4">
+                                        {bookingId && (
+                                            <>
+                                                {event.location.mode === "physical" && bookingId && (
+                                                    <button onClick={handleDownloadTicket} className="flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3 text-base w-full">
+                                                        Download Ticket (PDF)
+                                                    </button>
+                                                )
+                                                }
+
+                                                {event.location.mode === "online" && (
+                                                    <div className="bg-blue-50 p-4 rounded">
+                                                        <p className="font-medium">Join Link</p>
+                                                        <a
+                                                            href={event.location.online.joinUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-purple-600 underline"
+                                                        >
+                                                            Join Online Event
+                                                        </a>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                        <a href="/" data-discover="true">
                                             <button
                                                 type="button"
-                                                className="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl px-6 py-3 text-base w-full flex items-center justify-center gap-2"
+                                                className="flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3 text-base w-full"
                                             >
-                                                <DownloadIcon className="mr-2" />Download Tickets
+                                                <HomeOutlineIcon className="mr-2" />
+                                                Back to Home
                                             </button>
-                                            <a href="/" data-discover="true">
-                                                <button
-                                                    type="button"
-                                                    className="flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3 text-base w-full"
-                                                >
-                                                    <HomeOutlineIcon className="mr-2" />
-                                                    Back to Home
-                                                </button>
-                                            </a>
-                                        </div>
+                                        </a>
                                     </div>
-                                </form>
+                                </div>
                             )}
                         </div>
 
@@ -417,12 +454,12 @@ export default function Booking() {
                                         <img
                                             alt={event.title}
                                             className="w-16 h-16 object-cover rounded-lg"
-                                            src={event.image}
+                                            src={event.images.card.url}
                                         />
                                         <div className="flex-1">
                                             <h4 className="font-medium text-gray-900 mb-1">{event.title}</h4>
                                             <p className="text-sm text-gray-600">{event.date} • {event.time}</p>
-                                            <p className="text-sm text-gray-600">{event.location}</p>
+                                            <p className="text-sm text-gray-600">{displayLocation}</p>
                                         </div>
                                     </div>
 
@@ -430,7 +467,7 @@ export default function Booking() {
                                         {ticketType && (
                                             <div className="flex justify-between items-center mb-2">
                                                 <span>
-                                                    {ticketType.label} × {quantity}
+                                                    {ticketType.name} × {quantity}
                                                 </span>
                                                 <span className="font-medium">${totalPrice}</span>
                                             </div>

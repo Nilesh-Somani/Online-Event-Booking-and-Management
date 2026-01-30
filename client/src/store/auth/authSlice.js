@@ -1,23 +1,18 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { API_BASE_URL } from "../../api/api";
+import api from "../../api/axios";
 
 /* ---------------- LOGIN ---------------- */
 export const login = createAsyncThunk(
     "auth/login",
     async ({ identifier, password }, { rejectWithValue }) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ identifier, password }),
+            const res = await api.post("/auth/login", {
+                identifier,
+                password,
             });
-
-            const data = await res.json();
-            if (!res.ok) return rejectWithValue(data.message);
-
-            return data;
-        } catch {
-            return rejectWithValue("Server error");
+            return res.data;
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.message || "Login failed");
         }
     }
 );
@@ -25,31 +20,12 @@ export const login = createAsyncThunk(
 /* ---------------- REGISTER ---------------- */
 export const register = createAsyncThunk(
     "auth/register",
-    async (
-        { firstName, middleName, lastName, email, userId, password, role },
-        { rejectWithValue }
-    ) => {
+    async (payload, { rejectWithValue }) => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    firstName,
-                    middleName,
-                    lastName,
-                    email,
-                    userId,
-                    password,
-                    role,
-                }),
-            });
-
-            const data = await res.json();
-            if (!res.ok) return rejectWithValue(data.message);
-
-            return data;
-        } catch {
-            return rejectWithValue("Server error");
+            const res = await api.post("/auth/register", payload);
+            return res.data;
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.message || "Registration failed");
         }
     }
 );
@@ -59,14 +35,13 @@ export const checkEmailAvailability = createAsyncThunk(
     "auth/checkEmail",
     async (email, { rejectWithValue }) => {
         try {
-            const res = await fetch(
-                `${API_BASE_URL}/api/auth/check-availability?field=email&value=${email}`
+            const res = await api.get(
+                `/auth/check-availability`,
+                { params: { field: "email", value: email } }
             );
-            const data = await res.json();
-            if (!res.ok) return rejectWithValue(data.message);
-            return data.available;
+            return res.data.available;
         } catch {
-            return rejectWithValue("Server error");
+            return rejectWithValue(false);
         }
     }
 );
@@ -76,19 +51,19 @@ export const checkUserIdAvailability = createAsyncThunk(
     "auth/checkUserId",
     async (userId, { rejectWithValue }) => {
         try {
-            const res = await fetch(
-                `${API_BASE_URL}/api/auth/check-availability?field=userId&value=${userId}`
+            const res = await api.get(
+                `/auth/check-availability`,
+                { params: { field: "userId", value: userId } }
             );
-            const data = await res.json();
-            if (!res.ok) return rejectWithValue(data.message);
-            return data.available;
+            return res.data.available;
         } catch {
-            return rejectWithValue("Server error");
+            return rejectWithValue(false);
         }
     }
 );
 
 /* ---------------- SLICE ---------------- */
+
 const storedUser = JSON.parse(localStorage.getItem("authUser"));
 
 const authSlice = createSlice({
@@ -97,9 +72,8 @@ const authSlice = createSlice({
         user: storedUser || null,
         loading: false,
         error: null,
-
         availability: {
-            email: null,   // true | false | null
+            email: null,
             userId: null,
             checking: false,
         },
@@ -108,6 +82,7 @@ const authSlice = createSlice({
         logout(state) {
             state.user = null;
             localStorage.removeItem("authUser");
+            localStorage.removeItem("authToken");
         },
         resetEmailAvailability(state) {
             state.availability.email = null;
@@ -117,14 +92,11 @@ const authSlice = createSlice({
         },
         setAuthUser(state, action) {
             state.user = action.payload;
-
-            // ✅ REPLACE, DO NOT MERGE
             localStorage.setItem("authUser", JSON.stringify(action.payload));
-        }
+        },
     },
     extraReducers: (builder) => {
         builder
-            /* ---------------- LOGIN ---------------- */
             .addCase(login.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -140,7 +112,6 @@ const authSlice = createSlice({
                 state.error = action.payload;
             })
 
-            /* ---------------- REGISTER ---------------- */
             .addCase(register.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -156,7 +127,6 @@ const authSlice = createSlice({
                 state.error = action.payload;
             })
 
-            /* ---------------- EMAIL ---------------- */
             .addCase(checkEmailAvailability.pending, (state) => {
                 state.availability.checking = true;
             })
@@ -169,7 +139,6 @@ const authSlice = createSlice({
                 state.availability.email = false;
             })
 
-            /* ---------------- USER ID ---------------- */
             .addCase(checkUserIdAvailability.pending, (state) => {
                 state.availability.checking = true;
             })
@@ -181,8 +150,9 @@ const authSlice = createSlice({
                 state.availability.checking = false;
                 state.availability.userId = false;
             });
-    }
+    },
 });
 
-export const { logout, resetEmailAvailability, resetUserIdAvailability, setAuthUser } = authSlice.actions;
+export const { logout, resetEmailAvailability, resetUserIdAvailability, setAuthUser, } = authSlice.actions;
+
 export default authSlice.reducer;

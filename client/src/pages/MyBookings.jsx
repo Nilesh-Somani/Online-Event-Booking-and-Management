@@ -1,14 +1,19 @@
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { BookingsIcon, CalendarOutlineIcon, MoneyIcon } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useEffect } from "react";
+import { fetchMyBookings } from "../store/booking/bookingSlice";
 
 export default function MyBookings() {
-    const { list, loading, error } = useSelector(
-        (state) => state.bookings
+    const dispatch = useDispatch();
+    const { bookings, loading, error } = useSelector(
+        (state) => state.booking
     );
 
-    const bookings = [...list].reverse();
+    useEffect(() => {
+        if (!bookings.length) dispatch(fetchMyBookings())
+    })
 
     if (loading) {
         return <p className="pt-20 text-center">Loading bookings...</p>;
@@ -34,16 +39,16 @@ export default function MyBookings() {
                         <div className="space-y-6">
                             {bookings.map((b) => (
                                 <div
-                                    key={b.id}
+                                    key={b._id}
                                     className="bg-white border rounded-lg p-6 flex justify-between items-center"
                                 >
                                     <div>
                                         <h2 className="flex items-center gap-2 font-semibold text-lg">
                                             <BookingsIcon />
-                                            {b.eventTitle}
+                                            {b.event.title}
                                         </h2>
                                         <p className="text-sm text-gray-600">
-                                            {b.ticketType} × {b.quantity}
+                                            {b.ticket.name} × {b.ticket.quantity}
                                         </p>
                                         <p className="text-sm text-gray-600 flex items-center gap-1">
                                             <CalendarOutlineIcon size={14} />
@@ -53,7 +58,8 @@ export default function MyBookings() {
                                     <div className="text-right">
                                         <p className="font-bold text-purple-600 flex items-center gap-1 justify-end">
                                             <MoneyIcon size={16} />
-                                            ${b.total.toFixed(2)}
+
+                                            ${b.amountPaid.toFixed(2)}
                                         </p>
                                     </div>
                                 </div>

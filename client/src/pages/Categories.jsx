@@ -51,8 +51,8 @@ export default function Categories() {
                 return (
                   <Link
                     key={category._id}
-                    to={`/events?category=${encodeURIComponent(
-                      category.name
+                    to={`/events/category/${encodeURIComponent(
+                      category.slug
                     )}`}
                     className="bg-white rounded-2xl p-6 text-center shadow hover:shadow-lg transition"
                   >

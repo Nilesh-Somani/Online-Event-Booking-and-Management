@@ -1,76 +1,32 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchCategories } from "../store/category/categorySlice";
+import { createEvent } from "../store/events/eventsSlice";
+import { fetchEventDraft, saveEventDraft, clearEventDraft, } from "../store/events/eventDraftSlice";
+import { uploadImage as uploadImageThunk, deleteImage } from "../store/upload/uploadSlice";
+import { createVenue, fetchMyVenues } from "../store/venue/venueSlice";
 import { InfoIcon, FileIcon, BookingsIcon, SuccessIcon, AddIcon, DeleteIcon, ImageIcon, ArrowLeftIcon, ArrowRightIcon, } from "../components/Icon";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import BasicInfoTab from "../components/events/BasicInfoTab";
+import DetailsTab from "../components/events/DetailsTab";
+import TicketsTab from "../components/events/TicketsTab";
+import ReviewTab from "../components/events/ReviewTab";
 
-const CardPreview = ({ image, title, date, location, onRemove, removable = false }) => (
-    <div className="relative max-w-sm">
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <img src={image} className="w-full h-48 object-cover" />
-            <div className="p-4">
-                <div className="text-sm text-gray-500">{date || "Event Date"}</div>
-                <h3 className="font-semibold">{title || "Event Title"}</h3>
-                <div className="text-sm text-gray-600">
-                    {location || "Location"}
-                </div>
-            </div>
-        </div>
 
-        {removable && (
-            <button
-                type="button"
-                onClick={onRemove}
-                className="absolute top-2 right-2 bg-white/90 text-red-600 text-xs px-2 py-1 rounded hover:bg-red-600 hover:text-white"
-            >
-                Remove
-            </button>
-        )}
-    </div>
-);
-
-const CoverPreview = ({ image, title, date, location, onRemove, removable = false }) => (
-    <div className="relative h-56 rounded-lg overflow-hidden">
-        <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${image})` }}
-        />
-        <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-
-        <div className="absolute bottom-4 left-4 text-white">
-            <h3 className="text-xl font-bold">{title || "Event Title"}</h3>
-            <p className="text-sm">
-                {date || "Date"} • {location || "Location"}
-            </p>
-        </div>
-
-        {removable && (
-            <button
-                type="button"
-                onClick={onRemove}
-                className="absolute top-3 right-3 bg-white/90 text-red-600 text-xs px-3 py-1 rounded hover:bg-red-600 hover:text-white"
-            >
-                Remove
-            </button>
-        )}
-    </div>
-);
-
-const UploadBox = ({ label, onClick }) => (
-    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-        <ImageIcon className="mx-auto text-gray-400 mb-2" />
-        <p className="text-gray-600 mb-2">{label}</p>
-
-        <button
-            type="button"
-            onClick={onClick}
-            className="rounded-lg border-2 border-purple-600 text-purple-600 px-4 py-2 text-sm hover:bg-purple-600 hover:text-white"
-        >
-            Choose Image
-        </button>
-    </div>
-);
 
 export default function CreateEvent() {
+    const dispatch = useDispatch();
+    const { categories: allCategories } = useSelector(state => state.categories);
+    const { draft, loading } = useSelector(state => state.eventDraft);
+    const { venues } = useSelector(state => state.venues);
+
+    useEffect(() => {
+        dispatch(fetchCategories());
+        dispatch(fetchEventDraft());
+        dispatch(fetchMyVenues());
+    }, [dispatch]);
+
     const [currentTab, setCurrentTab] = useState(0);
     const [tickets, setTickets] = useState([
         { name: "General Admission", price: "", quantity: "" },
@@ -78,9 +34,11 @@ export default function CreateEvent() {
 
     // -------- BASIC INFO STATE --------
     const [title, setTitle] = useState("");
-    const [categories, setCategories] = useState([]);
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
     const [tags, setTags] = useState([]);
     const [description, setDescription] = useState("");
+    const [highlights, setHighlights] = useState([]);
+    const [highlightInput, setHighlightInput] = useState("");
 
     // -------- IMAGES --------
     const [cardImage, setCardImage] = useState(null);
@@ -89,35 +47,259 @@ export default function CreateEvent() {
     const [coverImage, setCoverImage] = useState(null);
     const [coverPreview, setCoverPreview] = useState(coverImage);
 
-    const [galleryImages, setGalleryImages] = useState([]);
-    const [galleryPreviews, setGalleryPreviews] = useState(galleryImages);
+    const [galleryItems, setGalleryItems] = useState([]);
+
+    const [cardUploading, setCardUploading] = useState(false);
+    const [coverUploading, setCoverUploading] = useState(false);
 
     // -------- DETAILS STATE --------
     const [date, setDate] = useState("");
     const [startTime, setStartTime] = useState("");
-    const [duration, setDuration] = useState(0);
+    const [schedule, setSchedule] = useState([]);
+    const [duration, setDuration] = useState("");
     const [capacity, setCapacity] = useState("");
+    // -------- LOCATION MODE STATE --------
+    const [locationMode, setLocationMode] = useState("physical"); // physical | online | hybrid
+
+    // Physical location (existing)
     const [locationName, setLocationName] = useState("");
     const [address, setAddress] = useState("");
-    const [isPublic, setIsPublic] = useState(true);
+    const [city, setCity] = useState("");
+    const [stateRegion, setStateRegion] = useState("");
+    const [country, setCountry] = useState("");
+    const [coordinates, setCoordinates] = useState(null); // { lat: Number, lng: Number }
+    const [parking, setParking] = useState("");
+    const [entryNotes, setEntryNotes] = useState("");
+
+    const [saveVenue, setSaveVenue] = useState(false);
+    const [selectedVenueId, setSelectedVenueId] = useState(null);
+
+    // Online location (new)
+    const [onlinePlatform, setOnlinePlatform] = useState("");
+    const [onlineJoinUrl, setOnlineJoinUrl] = useState("");
+    const [onlineAccessNotes, setOnlineAccessNotes] = useState("");
+
+    const [policies, setPolicies] = useState({
+        refund: "",
+        ageLimit: "",
+        entry: "",
+    });
+    const [eventType, setEventType] = useState("public"); // "public" | "private"
     const [allowWaitList, setAllowWaitList] = useState(false);
+
+    const clearError = (key) => {
+        setErrors(prev => {
+            if (!prev[key]) return prev;
+            const copy = { ...prev };
+            delete copy[key];
+            return copy;
+        });
+    };
+
+    const [submitStatus, setSubmitStatus] = useState(null); // null | "success" | "error"
+    const [submitMessage, setSubmitMessage] = useState("");
 
     const cardInputRef = useRef(null);
     const coverInputRef = useRef(null);
     const galleryInputRef = useRef(null);
+    const uploadControllersRef = useRef({});
+    const hasHydratedRef = useRef(false);
+    const lastSavedRef = useRef(null);
+    const hasInitializedDraftRef = useRef(false);
 
-    const ALL_CATEGORIES = {
-        "Music & Concerts": ["DJ", "Live", "EDM", "Rock"],
-        Technology: ["AI", "Web", "Cloud"],
-        Sports: ["Football", "Cricket"],
+    const [errors, setErrors] = useState({});
+    const fieldRefs = useRef({});
+
+    const registerField = (name) => (el) => {
+        if (!el) return;
+        fieldRefs.current[name] = el;
     };
 
-    const availableTags = categories.length
-        ? [...new Set(categories.flatMap(cat => ALL_CATEGORIES[cat] || []))]
-        : ["Popular", "Trending", "Featured"];
+    const availableTags = useMemo(() => {
+        return allCategories
+            .filter(cat => selectedCategoryIds.includes(cat._id))
+            .flatMap(cat => cat.tags || []);
+    }, [allCategories, selectedCategoryIds]);
+
+    useEffect(() => {
+        setTags(prev => {
+            const next = prev.filter(tag => availableTags.includes(tag));
+
+            // ⛔ Prevent useless state updates
+            if (next.length === prev.length &&
+                next.every((t, i) => t === prev[i])) {
+                return prev;
+            }
+
+            return next;
+        });
+    }, [availableTags]);
+
+    useEffect(() => {
+        if (loading) return;
+
+        // If backend says no draft AND we haven't created one yet
+        if (!draft && !hasInitializedDraftRef.current) {
+            hasInitializedDraftRef.current = true;
+
+            const emptyDraft = {
+                lastStep: 0,
+                title: "",
+                description: "",
+                categories: [],
+                tags: [],
+                eventType: "public",
+                highlights: [],
+                schedule: [],
+                tickets: [],
+                images: {
+                    card: null,
+                    cover: null,
+                    gallery: [],
+                },
+            };
+
+            dispatch(saveEventDraft(emptyDraft));
+        }
+    }, [draft, loading, dispatch]);
+
+    useEffect(() => {
+        // ⛔ wait until API finishes
+        if (loading) return;
+
+        // ⛔ hydrate only once
+        if (hasHydratedRef.current) return;
+
+        // ⛔ if draft is still null, DO NOT hydrate yet
+        if (!draft) return;
+
+        // ✅ now it's safe
+        hasHydratedRef.current = true;
+
+        setCurrentTab(draft.lastStep ?? 0);
+
+        setTitle(draft.title ?? "");
+        setSelectedCategoryIds(draft.categories ?? []);
+        setTags(draft.tags ?? []);
+        setDescription(draft.description ?? "");
+        setHighlights(draft.highlights ?? []);
+
+        setDate(draft.date ? draft.date.slice(0, 10) : "");
+        setStartTime(draft.startTime ?? "");
+        setDuration(draft.durationHours ?? "");
+        setCapacity(draft.capacity ?? "");
+
+        setLocationMode(draft.location.mode || "physical");
+        const venue = draft.location.physical?.venueSnapshot;
+        setLocationName(venue?.name ?? "");
+        setAddress(venue?.address ?? "");
+        setCity(venue?.city ?? "");
+        setStateRegion(venue?.state ?? "");
+        setCountry(venue?.country ?? "");
+        setCoordinates(venue?.coordinates ?? null);
+        setParking(venue?.parking ?? "");
+        setEntryNotes(venue?.entryNotes ?? "");
+        setOnlinePlatform(draft.location.online?.platform ?? "");
+        setOnlineJoinUrl(draft.location.online?.joinUrl ?? "");
+        setOnlineAccessNotes(draft.location.online?.accessNotes ?? "");
+
+        setPolicies(draft.policies ?? { refund: "", ageLimit: "", entry: "" });
+        setEventType(draft.eventType ?? "public");
+        setAllowWaitList(draft.allowWaitList ?? false);
+
+        setTickets(
+            draft.tickets && draft.tickets.length > 0
+                ? draft.tickets
+                : [{ name: "", price: "", quantity: "" }]
+        );
+        setSchedule(draft.schedule ?? []);
+
+        if (draft.images?.card) {
+            setCardImage(draft.images.card);
+            setCardPreview(draft.images.card.url);
+        }
+
+        if (draft.images?.cover) {
+            setCoverImage(draft.images.cover);
+            setCoverPreview(draft.images.cover.url);
+        }
+
+        setGalleryItems(draft.images?.gallery ?? []);
+
+        lastSavedRef.current = JSON.stringify(draft);
+    }, [draft, loading]);
+
+    useEffect(() => {
+        if (!hasHydratedRef.current) return;
+
+        const payload = {
+            lastStep: currentTab,
+            title,
+            description,
+            categories: selectedCategoryIds,
+            tags,
+            eventType,
+            date,
+            startTime,
+            durationHours: duration ? Number(duration) : null,
+            location: {
+                mode: locationMode,
+                physical: locationMode !== "online" ? {
+                    venueSnapshot: {
+                        name: locationName,
+                        address,
+                        city,
+                        state: stateRegion,
+                        country,
+                        coordinates,
+                        parking: parking || null,
+                        entryNotes: entryNotes || null,
+                    },
+                } : undefined,
+                online: locationMode !== "physical" ? {
+                    platform: onlinePlatform || null,
+                    joinUrl: onlineJoinUrl || null,
+                    accessNotes: onlineAccessNotes || null,
+                } : undefined,
+            },
+            images: {
+                card: cardImage,
+                cover: coverImage,
+                gallery: galleryItems.filter(i => !i.uploading),
+            },
+            highlights,
+            schedule,
+            capacity: capacity ? Number(capacity) : null,
+            allowWaitList,
+            tickets,
+        };
+
+        const serialized = JSON.stringify(payload);
+
+        if (serialized === lastSavedRef.current) return;
+
+        const timeout = setTimeout(() => {
+            dispatch(saveEventDraft(payload));
+            lastSavedRef.current = serialized;
+        }, 800);
+
+        return () => clearTimeout(timeout);
+    }, [dispatch, currentTab, title, description, selectedCategoryIds, tags, highlights, date, startTime, duration, capacity, locationMode, locationName, address, city, stateRegion, country, coordinates, parking, entryNotes, onlinePlatform, onlineJoinUrl, onlineAccessNotes, eventType, allowWaitList, tickets, schedule, cardImage, coverImage, galleryItems]);
 
     const nextTab = () => {
-        if (currentTab < 3) setCurrentTab(currentTab + 1);
+        const e = validateTab(currentTab);
+        setErrors(e);
+
+        if (Object.keys(e).length > 0) {
+            const firstKey = Object.keys(e)[0];
+            fieldRefs.current[firstKey]?.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+            });
+            return;
+        }
+
+        setCurrentTab(t => t + 1);
     };
 
     const prevTab = () => {
@@ -128,72 +310,338 @@ export default function CreateEvent() {
         setTickets([...tickets, { name: "", price: "", quantity: "" }]);
     };
 
-    const handleSingleImage = (file, setFile, setPreview) => {
+    const handleSingleImage = async (file, setImage, setPreview, setLoading, errorKey) => {
         if (!file) return;
-        setFile(file);
-        setPreview(URL.createObjectURL(file));
+        setLoading(true);
+
+        try {
+            const result = await dispatch(
+                uploadImageThunk({ file, folder: "events" })
+            ).unwrap();
+
+            setImage(result);        // { url, publicId }
+            setPreview(result.url);  // Cloudinary URL
+            clearError(errorKey)
+        } catch (err) {
+            console.error(err);
+            alert("Image upload failed");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleGalleryImages = (files) => {
-        if (!files || files.length === 0) return;
-        const imgs = Array.from(files);
-        setGalleryImages(imgs);
-        setGalleryPreviews(imgs.map(f => URL.createObjectURL(f)));
+    const handleGalleryImages = async (files) => {
+        if (!files?.length) return;
+
+        const fileArray = Array.from(files);
+
+        fileArray.forEach(async (file) => {
+            const tempId = crypto.randomUUID();
+
+            // 1️⃣ Add placeholder immediately
+            setGalleryItems(prev => [
+                ...prev,
+                { id: tempId, url: null, publicId: null, uploading: true }
+            ]);
+
+            try {
+                const controller = new AbortController();
+                uploadControllersRef.current[tempId] = controller;
+
+                const result = await dispatch(
+                    uploadImageThunk({
+                        file,
+                        folder: "events",
+                        signal: controller.signal
+                    })
+                ).unwrap();
+
+                delete uploadControllersRef.current[tempId];
+
+                // 2️⃣ Replace placeholder with real image
+                setGalleryItems(prev =>
+                    prev.map(item =>
+                        item.id === tempId
+                            ? {
+                                ...item,
+                                url: result.url,
+                                publicId: result.publicId,
+                                uploading: false
+                            }
+                            : item
+                    )
+                );
+            } catch (err) {
+                console.error(err);
+                delete uploadControllersRef.current[tempId];
+
+                // 3️⃣ Remove failed placeholder
+                setGalleryItems(prev =>
+                    prev.filter(item => item.id !== tempId)
+                );
+            }
+        });
     };
 
-    const removeCardImage = () => {
+    const removeCardImage = async () => {
+        if (cardImage?.publicId) {
+            await dispatch(deleteImage(cardImage.publicId));
+        }
         setCardImage(null);
         setCardPreview(null);
         if (cardInputRef.current) cardInputRef.current.value = "";
     };
 
-    const removeCoverImage = () => {
+    const removeCoverImage = async () => {
+        if (coverImage?.publicId) {
+            await dispatch(deleteImage(coverImage.publicId));
+        }
         setCoverImage(null);
         setCoverPreview(null);
         if (coverInputRef.current) coverInputRef.current.value = "";
     };
 
-    const removeGalleryImage = (index) => {
-        setGalleryImages(prev => prev.filter((_, i) => i !== index));
-        setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
+    const removeGalleryImageById = async (id) => {
+        setGalleryItems(prev => {
+            const item = prev.find(i => i.id === id);
+            if (!item) return prev;
+
+            // 1. Cancel upload if still uploading
+            if (item.uploading && uploadControllersRef.current[id]) {
+                uploadControllersRef.current[id].abort();
+                delete uploadControllersRef.current[id];
+            }
+
+            // 2. Delete from cloud (fire-and-forget)
+            if (item.publicId) {
+                dispatch(deleteImage(item.publicId));
+            }
+
+            // 3. Remove from UI
+            return prev.filter(i => i.id !== id);
+        });
     };
 
-    const safeNumber = (v, min = 0) => Math.max(Number(v) || 0, min);
+    const isUploading =
+        cardUploading ||
+        coverUploading ||
+        galleryItems.some(i => i.uploading);
+
+    const toMinutes = (time) => {
+        if (!time) return null;
+        const [h, m] = time.split(":").map(Number);
+        return h * 60 + m;
+    };
+
+    const eventStartMinutes = toMinutes(startTime);
+    const eventEndMinutes =
+        eventStartMinutes !== null && duration
+            ? eventStartMinutes + Number(duration) * 60
+            : null;
+
+    const today = new Date().toISOString().split("T")[0];
+    const nowMinutes = (() => {
+        const d = new Date();
+        return d.getHours() * 60 + d.getMinutes();
+    })();
+    const minEventDate = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 2);
+        return d.toISOString().split("T")[0];
+    })();
+
+
+    const isScheduleTimeValid = (time) => {
+        if (!time || !startTime || !date) return true;
+
+        const t = toMinutes(time);
+
+        // ⛔ Event start/end window
+        if (eventStartMinutes !== null && t < eventStartMinutes) return false;
+        if (eventEndMinutes !== null && t > eventEndMinutes) return false;
+
+        // ⛔ If event is today, schedule must also be future
+        if (date === today && t < nowMinutes) return false;
+
+        return true;
+    };
+
+    const validateTickets = () => {
+        const cap = Number(capacity || 0);
+
+        let totalQty = 0;
+
+        for (const t of tickets) {
+            if (Number(t.price) < 0) return "Ticket price cannot be negative";
+            if (Number(t.quantity) < 1) return "Ticket quantity must be at least 1";
+
+            totalQty += Number(t.quantity);
+
+            if (cap && Number(t.quantity) > cap)
+                return "Ticket quantity cannot exceed event capacity";
+        }
+
+        if (cap && totalQty > cap)
+            return "Total ticket quantity exceeds event capacity";
+
+        return null;
+    };
+
+    const validateTab = (tab) => {
+        const e = {};
+
+        // -------- TAB 0: BASIC INFO --------
+        if (tab === 0) {
+            if (!title.trim()) e.title = true;
+            if (selectedCategoryIds.length === 0) e.categories = true;
+            if (!description.trim()) e.description = true;
+            if (!cardImage) e.cardImage = true;
+            if (!coverImage) e.coverImage = true;
+        }
+
+        // -------- TAB 1: DETAILS --------
+        if (tab === 1) {
+            if (!date) e.date = true;
+            if (date && date < minEventDate) {
+                e.date = "Events must be scheduled at least 2 days in advance";
+            }
+            if (!startTime) e.startTime = true;
+            if (locationMode !== "online" && !locationName.trim()) e.locationName = true;
+            if (locationMode !== "online" && !address.trim()) e.address = true;
+            if (locationMode !== "physical" && !onlinePlatform.trim()) e.onlinePlatform = true;
+            if (locationMode !== "physical" && !onlineJoinUrl.trim()) e.onlineJoinUrl = true;
+        }
+
+        // -------- TAB 2: TICKETS --------
+        if (tab === 2) {
+            if (tickets.length === 0) e.tickets = true;
+
+            tickets.forEach((t, i) => {
+                if (!t.name || !t.price || !t.quantity) {
+                    e[`ticket-${i}`] = true;
+                }
+            });
+
+            const ticketError = validateTickets();
+            if (ticketError) e.ticketValidation = ticketError;
+        }
+
+        return e;
+    };
 
     const handleSubmit = async () => {
-        const cardUrl = await uploadImage(cardImage);
-        const coverUrl = await uploadImage(coverImage);
+        if (isUploading) {
+            setSubmitStatus("error");
+            setSubmitMessage("Please wait until all images finish uploading.");
+            return;
+        }
 
-        const galleryUrls = await Promise.all(
-            galleryImages.map(file => uploadImage(file))
-        );
+        try {
+            const payload = {
+                title,
+                description,
+                categories: selectedCategoryIds,
+                tags,
+                eventType,
 
-        const payload = {
-            durationHours: safeNumber(duration) || 0,
-            venue: {
-                name: locationName,
-                address: address,
-            },
-            images: {
-                card: { url: cardUrl },
-                cover: { url: coverUrl },
-                gallery: galleryUrls.map(url => ({ url })),
-            },
-            capacity: safeNumber(capacity, 1),
-            tickets: tickets.map(t => ({
-                ...t,
-                price: safeNumber(t.price, 0),
-                quantity: safeNumber(t.quantity, 1),
-            })),
-        };
+                date,
+                startTime,
+                durationHours: duration ? Number(duration) : null,
 
-        console.log(payload);
+                location: {
+                    mode: locationMode,
+                    physical: locationMode !== "online" ? {
+                        venueId,
+                        venueSnapshot: {
+                            name: locationName,
+                            address,
+                            city,
+                            state: stateRegion,
+                            country,
+                            coordinates,
+                            parking: parking || null,
+                            entryNotes: entryNotes || null,
+                        },
+                    } : undefined,
+                    online: locationMode !== "physical" ? {
+                        platform: onlinePlatform || null,
+                        joinUrl: onlineJoinUrl || null,
+                        accessNotes: onlineAccessNotes || null,
+                    } : undefined,
+                },
+
+                images: {
+                    card: cardImage
+                        ? { url: cardImage.url, alt: "" }
+                        : null,
+
+                    cover: coverImage
+                        ? { url: coverImage.url, alt: "" }
+                        : null,
+
+                    gallery: galleryItems
+                        .filter(i => !i.uploading)
+                        .map(i => ({
+                            url: i.url,
+                            alt: "",
+                        })),
+                },
+
+                highlights,
+                schedule,
+                policies,
+
+                capacity: capacity ? Number(capacity) : null,
+                allowWaitList,
+
+                tickets: tickets.map(t => ({
+                    name: t.name.trim(),
+                    price: Number(t.price),
+                    quantity: Number(t.quantity),
+                })),
+            };
+
+            let venueId = selectedVenueId;
+
+            if (saveVenue && locationMode !== "online" && !venueId) {
+                const res = await dispatch(createVenue({
+                    name: locationName,
+                    address,
+                    city,
+                    state: stateRegion,
+                    country,
+                    coordinates,
+                    parking,
+                    entryNotes,
+                })).unwrap();
+
+                venueId = res.venue._id;
+                setSelectedVenueId(venueId);
+            }
+
+            await dispatch(createEvent(payload)).unwrap();
+            await dispatch(clearEventDraft());
+
+            setSubmitStatus("success");
+            setSubmitMessage("Your event has been submitted for approval.")
+        } catch (err) {
+            setSubmitStatus("error");
+            setSubmitMessage(
+                "Something went wrong while creating the event. Your progress is saved. Please try again in a few minutes."
+            );
+            console.log(err);
+        }
     };
 
-    const uploadImage = async (file) => {
-        // later: Cloudinary / S3
-        return URL.createObjectURL(file); // TEMP ONLY
-    };
+    useEffect(() => {
+        if (submitStatus === "success") {
+            const t = setTimeout(() => {
+                window.location.href = "/events";
+            }, 5000);
+
+            return () => clearTimeout(t);
+        }
+    }, [submitStatus]);
 
     return (
         <>
@@ -217,25 +665,31 @@ export default function CreateEvent() {
                                 { label: "Review", icon: <SuccessIcon /> },
                             ].map((tab, idx) => (
                                 <div key={tab.label} className="flex items-center">
-                                    <div
-                                        className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${currentTab >= idx
-                                            ? "bg-purple-600 border-purple-600 text-white"
-                                            : "border-gray-300 text-gray-400"
-                                            }`}
-                                    >
-                                        {tab.icon}
+                                    {/* ICON + LABEL */}
+                                    <div className="flex flex-col items-center sm:flex-row sm:items-center px-2">
+                                        <div
+                                            className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${currentTab >= idx
+                                                ? "bg-purple-600 border-purple-600 text-white"
+                                                : "border-gray-300 text-gray-400"
+                                                }`}
+                                        >
+                                            {tab.icon}
+                                        </div>
+
+                                        <span
+                                            className={`mt-1 text-xs text-center sm:mt-0 sm:ml-2 sm:text-sm font-medium whitespace-nowrap ${currentTab >= idx ? "text-purple-600" : "text-gray-400"
+                                                }`}
+                                        >
+                                            {tab.label}
+                                        </span>
                                     </div>
-                                    <span
-                                        className={`ml-2 text-sm font-medium ${currentTab >= idx ? "text-purple-600" : "text-gray-400"
-                                            }`}
-                                    >
-                                        {tab.label}
-                                    </span>
+
+                                    {/* CONNECTOR (always horizontal) */}
                                     {idx < 3 && (
                                         <div
-                                            className={`w-16 h-0.5 mx-4 ${currentTab > idx ? "bg-purple-600" : "bg-gray-300"
+                                            className={`h-0.5 w-3 mx-0 min-[350px]:w-4 min-[350px]:mx-1 min-[450px]:w-8 min-[450px]:mx-2 min-[800px]:w-16 min-[800px]:mx-4 ${currentTab > idx ? "bg-purple-600" : "bg-gray-300"
                                                 }`}
-                                        ></div>
+                                        />
                                     )}
                                 </div>
                             ))}
@@ -245,454 +699,146 @@ export default function CreateEvent() {
                     {/* Tab Content */}
                     <div className="bg-white rounded-lg border border-gray-200 p-8 space-y-6">
                         {/* ---------------- BASIC INFO ---------------- */}
-                        {currentTab === 0 && (
-                            <div className="space-y-6">
-                                <h2 className="text-xl font-semibold mb-6">Basic Information</h2>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Event Title *</label>
-                                    <input
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
-                                        placeholder="Enter event title"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        type="text"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-                                    {Object.keys(ALL_CATEGORIES).map(cat => (
-                                        <label key={cat} className="flex  items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={categories.includes(cat)}
-                                                onChange={(e) => {
-                                                    setCategories(prev =>
-                                                        e.target.checked
-                                                            ? [...prev, cat]
-                                                            : prev.filter(c => c !== cat)
-                                                    );
-                                                }}
-                                            />
-                                            {cat}
-                                        </label>
-                                    ))}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-2">Tags</label>
-                                    {availableTags.map(tag => (
-                                        <label key={tag} className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={tags.includes(tag)}
-                                                onChange={(e) => {
-                                                    setTags(prev =>
-                                                        e.target.checked
-                                                            ? [...prev, tag]
-                                                            : prev.filter(t => t !== tag)
-                                                    );
-                                                }}
-                                            />
-                                            {tag}
-                                        </label>
-                                    ))}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Event Description *</label>
-                                    <textarea
-                                        rows="6"
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Describe your event..."
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                {/* CARD IMAGE (REQUIRED) */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Card Image (Required)
-                                    </label>
-
-                                    {cardPreview ? (
-                                        <CardPreview
-                                            image={cardPreview}
-                                            title={title}
-                                            date={date}
-                                            location={locationName}
-                                            onRemove={removeCardImage}
-                                            removable={true}
-                                        />
-                                    ) : (
-                                        <>
-                                            <input ref={cardInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleSingleImage(e.target.files[0], setCardImage, setCardPreview)} />
-                                            <UploadBox
-                                                label="Upload card image"
-                                                onClick={() => cardInputRef.current.click()}
-                                            />
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* COVER IMAGE (REQUIRED) */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Cover Image (Required – Hero Banner)
-                                    </label>
-
-                                    {coverPreview ? (
-                                        <CoverPreview
-                                            image={coverPreview}
-                                            title={title}
-                                            date={date}
-                                            location={locationName}
-                                            onRemove={removeCoverImage}
-                                            removable={true}
-                                        />
-                                    ) : (
-                                        <>
-                                            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleSingleImage(e.target.files[0], setCoverImage, setCoverPreview)} />
-                                            <UploadBox
-                                                label="Upload cover image"
-                                                onClick={() => coverInputRef.current.click()}
-                                            />
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        {currentTab === 0 && <BasicInfoTab
+                            errors={errors}
+                            clearError={clearError}
+                            registerField={registerField}
+                            title={title}
+                            setTitle={setTitle}
+                            selectedCategoryIds={selectedCategoryIds}
+                            setSelectedCategoryIds={setSelectedCategoryIds}
+                            tags={tags}
+                            setTags={setTags}
+                            description={description}
+                            setDescription={setDescription}
+                            highlights={highlights}
+                            setHighlights={setHighlights}
+                            highlightInput={highlightInput}
+                            setHighlightInput={setHighlightInput}
+                            setCardImage={setCardImage}
+                            cardPreview={cardPreview}
+                            setCardPreview={setCardPreview}
+                            setCoverImage={setCoverImage}
+                            coverPreview={coverPreview}
+                            setCoverPreview={setCoverPreview}
+                            cardUploading={cardUploading}
+                            setCardUploading={setCardUploading}
+                            coverUploading={coverUploading}
+                            setCoverUploading={setCoverUploading}
+                            allCategories={allCategories}
+                            availableTags={availableTags}
+                            handleSingleImage={handleSingleImage}
+                            removeCardImage={removeCardImage}
+                            removeCoverImage={removeCoverImage}
+                            cardInputRef={cardInputRef}
+                            coverInputRef={coverInputRef}
+                            date={date}
+                            locationName={locationName}
+                        />}
 
                         {/* ---------------- DETAILS ---------------- */}
-                        {currentTab === 1 && (
-                            <div className="space-y-6">
-                                <h2 className="text-xl font-semibold mb-6">Event Details</h2>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-                                        <input
-                                            type="date"
-                                            value={date}
-                                            onChange={(e) => setDate(e.target.value)}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
-                                        <input
-                                            type="time"
-                                            value={startTime}
-                                            onChange={(e) => setStartTime(e.target.value)}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Duration (hours)</label>
-                                        <input
-                                            placeholder="2"
-                                            type="number"
-                                            value={duration}
-                                            min={1}
-                                            onChange={(e) => setDuration(e.target.value)}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Capacity</label>
-                                        <input
-                                            placeholder="100"
-                                            type="number"
-                                            value={capacity}
-                                            min={1}
-                                            onChange={(e) => setCapacity(e.target.value)}
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Location Name *</label>
-                                    <input
-                                        placeholder="Convention Center"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        type="text"
-                                        value={locationName}
-                                        onChange={(e) => setLocationName(e.target.value)}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
-                                    <input
-                                        placeholder="123 Main Street, City, State"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        type="text"
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                    />
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex items-center">
-                                        <input
-                                            id="isPublic"
-                                            type="checkbox"
-                                            value={isPublic}
-                                            onChange={(e) => setIsPublic(e.target.checked)}
-                                            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                                            defaultChecked
-                                        />
-                                        <label htmlFor="isPublic" className="ml-2 text-sm text-gray-700">
-                                            Make this event public
-                                        </label>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <input
-                                            id="allowWaitList"
-                                            type="checkbox"
-                                            value={allowWaitList}
-                                            onChange={(e) => setAllowWaitList(e.target.checked)}
-                                            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                                        />
-                                        <label htmlFor="allowWaitList" className="ml-2 text-sm text-gray-700">
-                                            Allow wait list when sold out
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {/* GALLERY IMAGES (OPTIONAL) */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Optional Gallery Image(s)
-                                    </label>
-
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                        <ImageIcon className="mx-auto text-gray-400 mb-2" />
-                                        <p className="text-gray-600 mb-2">
-                                            Upload optional images (multiple allowed)
-                                        </p>
-
-                                        <input
-                                            ref={galleryInputRef}
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => handleGalleryImages(e.target.files)}
-                                        />
-
-                                        <button
-                                            type="button"
-                                            onClick={() => galleryInputRef.current.click()}
-                                            className="rounded-lg border-2 border-purple-600 text-purple-600 px-4 py-2 text-sm hover:bg-purple-600 hover:text-white"
-                                        >
-                                            Choose Images
-                                        </button>
-                                    </div>
-
-                                    {/* Ordinary Preview */}
-                                    {galleryPreviews.length > 0 && (
-                                        <div className="grid grid-cols-3 gap-4 mt-4">
-                                            {galleryPreviews.map((img, i) => (
-                                                <div key={i} className="relative">
-                                                    <img
-                                                        src={img}
-                                                        className="h-32 w-full object-cover rounded-lg border"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeGalleryImage(i)}
-                                                        className="absolute top-1 right-1 bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded"
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        {currentTab === 1 && <DetailsTab
+                            errors={errors}
+                            clearError={clearError}
+                            registerField={registerField}
+                            date={date}
+                            setDate={setDate}
+                            startTime={startTime}
+                            setStartTime={setStartTime}
+                            duration={duration}
+                            setDuration={setDuration}
+                            capacity={capacity}
+                            setCapacity={setCapacity}
+                            schedule={schedule}
+                            setSchedule={setSchedule}
+                            venues={venues}
+                            locationMode={locationMode}
+                            setLocationMode={setLocationMode}
+                            locationName={locationName}
+                            setLocationName={setLocationName}
+                            address={address}
+                            setAddress={setAddress}
+                            city={city}
+                            setCity={setCity}
+                            stateRegion={stateRegion}
+                            setStateRegion={setStateRegion}
+                            country={country}
+                            setCountry={setCountry}
+                            parking={parking}
+                            setParking={setParking}
+                            entryNotes={entryNotes}
+                            setEntryNotes={setEntryNotes}
+                            saveVenue={saveVenue}
+                            setSaveVenue={setSaveVenue}
+                            selectedVenueId={selectedVenueId}
+                            setSelectedVenueId={setSelectedVenueId}
+                            onlinePlatform={onlinePlatform}
+                            setOnlinePlatform={setOnlinePlatform}
+                            onlineJoinUrl={onlineJoinUrl}
+                            setOnlineJoinUrl={setOnlineJoinUrl}
+                            onlineAccessNotes={onlineAccessNotes}
+                            setOnlineAccessNotes={setOnlineAccessNotes}
+                            policies={policies}
+                            setPolicies={setPolicies}
+                            eventType={eventType}
+                            setEventType={setEventType}
+                            allowWaitList={allowWaitList}
+                            setAllowWaitList={setAllowWaitList}
+                            galleryItems={galleryItems}
+                            setGalleryItems={setGalleryItems}
+                            handleGalleryImages={handleGalleryImages}
+                            removeGalleryImageById={removeGalleryImageById}
+                            galleryInputRef={galleryInputRef}
+                            today={today}
+                            nowMinutes={nowMinutes}
+                            minEventDate={minEventDate}
+                            isScheduleTimeValid={isScheduleTimeValid}
+                        />}
 
                         {/* Tickets tab */}
-                        {currentTab === 2 && (
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-xl font-semibold">Ticket Types</h2>
-                                    <button
-                                        type="button"
-                                        onClick={addTicket}
-                                        className="font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-6 py-3 text-base flex items-center gap-1"
-                                    >
-                                        <AddIcon className="mr-2" />Add Ticket Type
-                                    </button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {tickets.map((ticket, idx) => (
-                                        <div key={idx} className="p-4 border border-gray-200 rounded-lg relative">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h3 className="font-medium">Ticket Type {idx + 1}</h3>
-                                                {tickets.length > 1 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const updated = tickets.filter((_, i) => i !== idx);
-                                                            setTickets(updated);
-                                                        }}
-                                                        className="text-red-500 hover:text-red-700"
-                                                    >
-                                                        <DeleteIcon />
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Ticket Name</label>
-                                                    <input
-                                                        placeholder="General Admission"
-                                                        type="text"
-                                                        value={ticket.name}
-                                                        onChange={(e) => {
-                                                            const updated = [...tickets];
-                                                            updated[idx].name = e.target.value;
-                                                            setTickets(updated);
-                                                        }}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Price ($)</label>
-                                                    <input
-                                                        placeholder="50"
-                                                        type="number"
-                                                        value={ticket.price}
-                                                        min={1}
-                                                        onChange={(e) => {
-                                                            const updated = [...tickets];
-                                                            updated[idx].price = e.target.value;
-                                                            setTickets(updated);
-                                                        }}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-                                                    <input
-                                                        placeholder="100"
-                                                        type="number"
-                                                        value={ticket.quantity}
-                                                        min={1}
-                                                        onChange={(e) => {
-                                                            const updated = [...tickets];
-                                                            updated[idx].quantity = e.target.value;
-                                                            setTickets(updated);
-                                                        }}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {currentTab === 2 && <TicketsTab
+                            errors={errors}
+                            clearError={clearError}
+                            registerField={registerField}
+                            tickets={tickets}
+                            setTickets={setTickets}
+                            addTicket={addTicket}
+                        />}
 
                         {/* Review tab */}
-                        {currentTab === 3 && (
-                            <div className="space-y-6">
-                                <h2 className="text-xl font-semibold">Review Event</h2>
-
-                                {/* Event Basic Info */}
-                                <div className="p-4 border border-gray-200 rounded-lg">
-                                    <h3 className="font-medium mb-2">Basic Information</h3>
-                                    <p><span className="font-semibold">Title:</span> {title}</p>
-                                    <p><span className="font-semibold">Category:</span> {categories.join(", ")}</p>
-                                    <p>
-                                        <span className="font-semibold">Tags:</span>{" "}
-                                        {tags.join(", ")}
-                                    </p>
-                                    <p><span className="font-semibold">Description:</span> {description}</p>
-                                    {(cardPreview || coverPreview) && (
-                                        <div className="mt-2 p-4 border border-gray-200 rounded-lg">
-                                            {/* Card */}
-                                            {cardPreview && (
-                                                <>
-                                                    <p className="font-semibold mb-2">Card Image</p>
-                                                    <CardPreview
-                                                        image={cardPreview}
-                                                        title={title}
-                                                        date={date}
-                                                        location={locationName}
-                                                        onRemove={removeCardImage}
-                                                        removable={false}
-                                                    />
-                                                </>
-                                            )}
-
-                                            {/* Cover */}
-                                            {coverPreview && (
-                                                <>
-                                                    <p className={`font-semibold mb-2 ${cardPreview ? "mt-6" : "mt-0"}`}>Cover Image</p>
-                                                    <CoverPreview
-                                                        image={coverPreview}
-                                                        title={title}
-                                                        date={date}
-                                                        location={locationName}
-                                                        onRemove={removeCoverImage}
-                                                        removable={false}
-                                                    />
-                                                </>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Event Details */}
-                                <div className="p-4 border border-gray-200 rounded-lg">
-                                    <h3 className="font-medium mb-2">Event Details</h3>
-                                    <p><span className="font-semibold">Date:</span> {date}</p>
-                                    <p><span className="font-semibold">Start Time:</span> {startTime}</p>
-                                    <p><span className="font-semibold">Duration:</span> {duration}</p>
-                                    <p><span className="font-semibold">Capacity:</span> {capacity}</p>
-                                    <p><span className="font-semibold">Location:</span> {locationName}, {address}</p>
-                                    <p><span className="font-semibold">Public Event:</span> {isPublic ? "Yes" : "No"}</p>
-                                    <p><span className="font-semibold">Allow Wait List:</span> {allowWaitList ? "Yes" : "No"}</p>
-                                    {/* Gallery */}
-                                    {galleryPreviews.length > 0 && (
-                                        <div className="mt-2 p-4 border border-gray-200 rounded-lg">
-                                            <p className="font-semibold mb-2">Gallery Images</p>
-                                            <div className="grid grid-cols-3 gap-3">
-                                                {galleryPreviews.map((img, i) => (
-                                                    <div key={i} className="relative">
-                                                        <img
-                                                            src={img}
-                                                            className="h-24 w-full object-cover rounded border"
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Tickets */}
-                                <div className="p-4 border border-gray-200 rounded-lg">
-                                    <h3 className="font-medium mb-2">Tickets</h3>
-                                    {tickets.map((ticket, idx) => (
-                                        <div key={idx} className="border-b border-gray-200 py-2">
-                                            <p><span className="font-semibold">Name:</span> {ticket.name}</p>
-                                            <p><span className="font-semibold">Price:</span> ${ticket.price}</p>
-                                            <p><span className="font-semibold">Quantity:</span> {ticket.quantity}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {currentTab === 3 && <ReviewTab
+                            title={title}
+                            selectedCategoryIds={selectedCategoryIds}
+                            tags={tags}
+                            description={description}
+                            highlights={highlights}
+                            date={date}
+                            startTime={startTime}
+                            duration={duration}
+                            capacity={capacity}
+                            schedule={schedule}
+                            locationMode={locationMode}
+                            locationName={locationName}
+                            address={address}
+                            city={city}
+                            stateRegion={stateRegion}
+                            country={country}
+                            parking={parking}
+                            entryNotes={entryNotes}
+                            onlinePlatform={onlinePlatform}
+                            onlineJoinUrl={onlineJoinUrl}
+                            onlineAccessNotes={onlineAccessNotes}
+                            policies={policies}
+                            eventType={eventType}
+                            allowWaitList={allowWaitList}
+                            cardPreview={cardPreview}
+                            coverPreview={coverPreview}
+                            galleryItems={galleryItems}
+                            allCategories={allCategories}
+                            removeCardImage={removeCardImage}
+                            removeCoverImage={removeCoverImage}
+                            tickets={tickets}
+                        />}
 
                         {/* Navigation Buttons */}
                         <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
@@ -707,16 +853,51 @@ export default function CreateEvent() {
                             </button>
                             <button
                                 type="button"
+                                disabled={isUploading}
                                 onClick={currentTab < 3 ? nextTab : handleSubmit}
-                                className={`font-medium rounded-lg transition-all duration-200 whitespace-nowrap cursor-pointer px-6 py-3 text-base bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl`}
+                                className={`font-medium rounded-lg transition-all duration-200 px-6 py-3 text-base ${isUploading
+                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                    : "bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg"
+                                    }`}
+
                             >
-                                {currentTab < 3 ? "Next" : "Finish"}
+                                {isUploading ? "Uploading..." : currentTab < 3 ? "Next" : "Finish"}
                                 <ArrowRightIcon className="ml-2" />
                             </button>
                         </div>
                     </div>
                 </div>
             </main>
+
+            {submitStatus && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-sm w-full text-center">
+                        <h3 className="text-lg font-semibold mb-2">
+                            {submitStatus === "success" ? "Event Submitted 🎉" : "Submission Failed"}
+                        </h3>
+
+                        <p className="text-gray-600 mb-4">{submitMessage}</p>
+
+                        {submitStatus === "success" && (
+                            <button
+                                onClick={() => (window.location.href = "/events")}
+                                className="bg-purple-600 text-white px-4 py-2 rounded-lg"
+                            >
+                                Go to Events
+                            </button>
+                        )}
+
+                        {submitStatus === "error" && (
+                            <button
+                                onClick={() => setSubmitStatus(null)}
+                                className="border border-gray-300 px-4 py-2 rounded-lg"
+                            >
+                                Close
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <Footer />
         </>

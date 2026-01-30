@@ -32,6 +32,8 @@ export default function Events() {
   const category = params.category || "";
   const search = params.search || "";
   const [searchInput, setSearchInput] = useState(search);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const locationFilter = params.location || "";
   const sortBy = params.sortBy || "date";
   const [filters, setFilters] = useState({
@@ -90,11 +92,13 @@ export default function Events() {
     dispatch(
       fetchEvents({
         search,
+        dateFrom,
+        dateTo,
         category,
         location: locationFilter,
       })
     );
-  }, [dispatch, search, category, locationFilter]);
+  }, [dispatch, search, dateFrom, dateTo, category, locationFilter]);
 
   /* Load BASE filters once */
   useEffect(() => {
@@ -168,6 +172,28 @@ export default function Events() {
                     </span>
                   )}
                 </div>
+              </div>
+
+              {/* Date From */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500">From</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="h-12 px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Date To */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500">To</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="h-12 px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                />
               </div>
 
               {/* Sort By */}

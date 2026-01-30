@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "../../utils/axios";
+import axios from "../../api/axios";
 
 /**
  * =========================================================
@@ -192,7 +192,7 @@ const eventsSlice = createSlice({
             })
             .addCase(createEvent.fulfilled, (state, action) => {
                 state.loading = false;
-                state.myEvents.unshift(action.payload);
+                state.myEvents.unshift(action.payload.event);
             })
             .addCase(createEvent.rejected, (state, action) => {
                 state.loading = false;

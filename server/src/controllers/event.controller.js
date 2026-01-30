@@ -1,5 +1,6 @@
 import Category from "../models/Category.js"
 import Event from "../models/Event.js";
+import { geocodeLocation } from "../services/geocoding.service.js";
 
 /**
  * =========================================================
@@ -13,12 +14,12 @@ export const createEvent = async (req, res) => {
             title,
             description,
             categories,
+            tags,
             eventType,
             date,
             startTime,
             durationHours,
-            locationName,
-            venue,
+            location,
             images,
             tickets,
             capacity,
@@ -42,16 +43,34 @@ export const createEvent = async (req, res) => {
             });
         }
 
+        let coordinates = null;
+
+        if (location?.mode !== "online" && location?.physical?.venueSnapshot) {
+            const geoResult = await geocodeLocation(location.physical.venueSnapshot);
+            coordinates = geoResult.coordinates;
+        }
+
         const event = await Event.create({
             title,
             description,
             categories,
+            tags,
             eventType,
             date,
             startTime,
             durationHours,
-            locationName,
-            venue,
+            location: {
+                ...location,
+                physical: location?.physical
+                    ? {
+                        ...location.physical,
+                        venueSnapshot: {
+                            ...location.physical.venueSnapshot,
+                            coordinates,
+                        },
+                    }
+                    : undefined,
+            },
             images,
             tickets,
             capacity,
@@ -59,7 +78,12 @@ export const createEvent = async (req, res) => {
             highlights,
             schedule,
             policies,
-            organizer: req.user.id, // from auth middleware
+            organizer: req.user._id,
+            organizerSnapshot: {
+                name: `${req.user.profile.firstName} ${req.user.profile.lastName}`,
+                bio: req.user.profile.bio,
+                website: req.user.organizerProfile.businessInfo.website,
+            },
         });
 
         res.status(201).json({
@@ -84,6 +108,8 @@ export const getApprovedEvents = async (req, res) => {
     try {
         let {
             search,
+            dateFrom,
+            dateTo,
             category,
             location,
             order = "asc",
@@ -104,6 +130,12 @@ export const getApprovedEvents = async (req, res) => {
             query.$text = { $search: search };
         }
 
+        if (dateFrom || dateTo) {
+            query.date = {};
+            if (dateFrom) query.date.$gte = new Date(dateFrom);
+            if (dateTo) query.date.$lte = new Date(dateTo);
+        }
+
         if (category) {
             const cat = await Category.findOne({ slug: category }).select("_id");
             if (cat) {
@@ -112,11 +144,14 @@ export const getApprovedEvents = async (req, res) => {
         }
 
         if (location !== "") {
-            query.locationName = { $regex: location, $options: "i" };
+            query["location.physical.venueSnapshot.city"] = {
+                $regex: location,
+                $options: "i",
+            };
         }
 
         const sort = {
-            date: 1
+            date: order === "desc" ? -1 : 1,
         };
 
         const events = await Event.find(query)
@@ -146,66 +181,69 @@ export const getApprovedEvents = async (req, res) => {
 };
 
 export const getBaseEventFilters = async (req, res) => {
-  const events = await Event.find({
-    approvalStatus: "approved",
-    eventType: "public",
-  })
-    .select("locationName categories")
-    .populate("categories", "name slug");
+    const events = await Event.find({
+        approvalStatus: "approved",
+        eventType: "public",
+    })
+        .select("location categories")
+        .populate("categories", "name slug");
 
-  res.json({
-    locations: [...new Set(events.map(e => e.locationName).filter(Boolean))],
-    categories: [
-      ...new Map(
-        events.flatMap(e => e.categories).map(c => [c.slug, c])
-      ).values(),
-    ],
-  });
+    res.json({
+        locations: [...new Set(events.map(e => e.location.physical.venueSnapshot.city).filter(Boolean))],
+        categories: [
+            ...new Map(
+                events.flatMap(e => e.categories).map(c => [c.slug, c])
+            ).values(),
+        ],
+    });
 };
 
 export const getDependentEventFilters = async (req, res) => {
-  const { category, location, search } = req.query;
+    const { category, location, search } = req.query;
 
-  const baseQuery = {
-    approvalStatus: "approved",
-    eventType: "public",
-  };
+    const baseQuery = {
+        approvalStatus: "approved",
+        eventType: "public",
+    };
 
-  if (search) baseQuery.$text = { $search: search };
+    if (search) baseQuery.$text = { $search: search };
 
-  let categories = [];
-  let locations = [];
+    let categories = [];
+    let locations = [];
 
-  // Category selected → update locations only
-  if (category) {
-    const cat = await Category.findOne({ slug: category }).select("_id");
-    if (cat) {
-      const events = await Event.find({
-        ...baseQuery,
-        categories: cat._id,
-      }).select("locationName");
+    // Category selected → update locations only
+    if (category) {
+        const cat = await Category.findOne({ slug: category }).select("_id");
+        if (cat) {
+            const events = await Event.find({
+                ...baseQuery,
+                categories: cat._id,
+            }).select("location");
 
-      locations = [...new Set(events.map(e => e.locationName))];
+            locations = [...new Set(events.map(e => e.location.physical.venueSnapshot.city))];
+        }
     }
-  }
 
-  // Location selected → update categories only
-  if (location) {
-    const events = await Event.find({
-      ...baseQuery,
-      locationName: { $regex: location, $options: "i" },
-    })
-      .select("categories")
-      .populate("categories", "name slug");
+    // Location selected → update categories only
+    if (location) {
+        const events = await Event.find({
+            ...baseQuery,
+            "location.physical.venueSnapshot.city": {
+                $regex: location,
+                $options: "i",
+            },
+        })
+            .select("categories")
+            .populate("categories", "name slug");
 
-    categories = [
-      ...new Map(
-        events.flatMap(e => e.categories).map(c => [c.slug, c])
-      ).values(),
-    ];
-  }
+        categories = [
+            ...new Map(
+                events.flatMap(e => e.categories).map(c => [c.slug, c])
+            ).values(),
+        ];
+    }
 
-  res.json({ categories, locations });
+    res.json({ categories, locations });
 };
 
 /**

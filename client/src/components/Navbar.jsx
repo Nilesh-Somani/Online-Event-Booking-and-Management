@@ -9,6 +9,8 @@ export default function Navbar() {
     const navigate = useNavigate();
     const dropdownRef = useRef(null);
     const mobileMenuRef = useRef(null);
+    const profileButtonRef = useRef(null);
+    const mobileToggleRef = useRef(null);
     const [open, setOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -26,19 +28,27 @@ export default function Navbar() {
         { name: "Categories", path: "/categories" },
     ];
 
+    // DASHBOARD META (role-aware)
+    const dashboardMeta = {
+        user: { name: "Dashboard", path: "/dashboard" },
+        organizer: { name: "Organizer Dashboard", path: "/dashboard" },
+        admin: { name: "Admin Dashboard", path: "/dashboard" },
+    };
+
     // ROLE LINKS
     const roleLinks = {
-        user: [{ name: "My Bookings", path: "/mybookings" }],
+        user: [
+            { name: "My Bookings", path: "/mybookings" },
+            { name: "Analytics", path: "/analytics" }
+        ],
 
         organizer: [
-            { name: "Dashboard", path: "/organizer" },
             { name: "Create Event", path: "/create-event" },
             { name: "Attendees", path: "/attendees" },
             { name: "Analytics", path: "/analytics" },
         ],
 
         admin: [
-            { name: "Admin Panel", path: "/admin" },
             { name: "Users", path: "/admin?tab=users" },
             { name: "Analytics", path: "/analytics" },
         ],
@@ -49,31 +59,28 @@ export default function Navbar() {
         Events: EventsIcon,
         Categories: CategoriesIcon,
         Dashboard: DashboardIcon,
+        "Organizer Dashboard": DashboardIcon,
+        "Admin Dashboard": AuthAdminIcon,
         "Create Event": CreateEventIcon,
         Attendees: AttendeesIcon,
         Analytics: AnalyticsIcon,
-        "Admin Panel": AuthAdminIcon,
         Users: AuthUserIcon,
         "My Bookings": BookingsIcon,
-    };
-
-    const dropdownIcons = {
-        Dashboard: DashboardIcon,
-        "Create Event": CreateEventIcon,
-        Attendees: AttendeesIcon,
-        Analytics: AnalyticsIcon,
-        "Admin Panel": AuthAdminIcon,
-        Users: AuthUserIcon,
-        "My Bookings": BookingsIcon,
+        "Become Organizer": BecomeOrganizerIcon
     };
 
     // Links shown in MAIN NAV (desktop)
-    const desktopNavLinks = [...baseLinks, ...(role === "user" ? roleLinks.user : []), ...(role === "organizer" ? [roleLinks.organizer.find(link => link.name === "Dashboard")] : []), ...(role === "admin" ? [roleLinks.admin.find(link => link.name === "Admin Panel")] : []),];
+    const desktopNavLinks = [
+        ...baseLinks,
+        ...(role && dashboardMeta[role]
+            ? [{ ...dashboardMeta[role] }]
+            : []),
+    ];
 
     const mobileNavLinks = [
-        ...(role === "user" ? [{ name: "Become Organizer", path: "/organizer-application" }] : []),
-        ...(role === "organizer" ? roleLinks.organizer.filter(link => link.name !== "Dashboard") : []),
-        ...(role === "admin" ? roleLinks.admin.filter(link => link.name !== "Admin Panel") : []),
+        ...(role === "user" ? [...roleLinks.user, { name: "Become Organizer", path: "/organizer-application" }] : []),
+        ...(role === "organizer" ? roleLinks.organizer : []),
+        ...(role === "admin" ? roleLinks.admin : []),
     ]
 
     const logoutHandler = () => dispatch(logout());
@@ -84,22 +91,61 @@ export default function Navbar() {
     };
 
     useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        const handleOutsideInteraction = (e) => {
+            // PROFILE DROPDOWN
+            if (
+                dropdownOpen &&
+                dropdownRef.current &&
+                !dropdownRef.current.contains(e.target) &&
+                profileButtonRef.current &&
+                !profileButtonRef.current.contains(e.target)
+            ) {
                 setDropdownOpen(false);
             }
 
+            // MOBILE MENU
             if (
+                open &&
                 mobileMenuRef.current &&
-                !mobileMenuRef.current.contains(e.target)
+                !mobileMenuRef.current.contains(e.target) &&
+                mobileToggleRef.current &&
+                !mobileToggleRef.current.contains(e.target)
             ) {
                 setOpen(false);
             }
         };
 
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape") {
+                setDropdownOpen(false);
+                setOpen(false);
+            }
+        };
+
+        const handleScroll = (e) => {
+            // Ignore scrolls happening inside the mobile menu
+            if (
+                open &&
+                mobileMenuRef.current &&
+                mobileMenuRef.current.contains(e.target)
+            ) {
+                return;
+            }
+
+            if (dropdownOpen) setDropdownOpen(false);
+            if (open) setOpen(false);
+        };
+
+        document.addEventListener("mousedown", handleOutsideInteraction);
+        document.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("scroll", handleScroll, true);
+
+        return () => {
+            document.removeEventListener("mousedown", handleOutsideInteraction);
+            document.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("scroll", handleScroll, true);
+        };
+    }, [dropdownOpen, open]);
 
     return (
         <header className="w-full bg-white shadow-sm fixed top-0 left-0 right-0 z-50 border-b border-gray-200">
@@ -172,7 +218,10 @@ export default function Navbar() {
                             </div>
 
                             <div className="relative group" ref={dropdownRef}>
-                                <button onClick={() => setDropdownOpen(prev => !prev)} className="flex items-center gap-2">
+                                <button
+                                    ref={profileButtonRef}
+                                    onClick={() => setDropdownOpen(prev => !prev)}
+                                    className="flex items-center gap-2">
                                     {authUser?.profile?.avatar ? (
                                         <img
                                             src={authUser.profile.avatar}
@@ -195,8 +244,21 @@ export default function Navbar() {
                                             <p className="text-xs text-gray-500 capitalize">{role}</p>
                                         </div>
 
+                                        {dashboardMeta[role] && (() => {
+                                            const Icon = linkIcons[dashboardMeta[role].name];
+                                            return (
+                                                <Link
+                                                    to={dashboardMeta[role].path}
+                                                    className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
+                                                >
+                                                    {Icon && <Icon size={16} />}
+                                                    {dashboardMeta[role].name}
+                                                </Link>
+                                            )
+                                        })}
+
                                         {(roleLinks[role] || []).map(item => {
-                                            const Icon = dropdownIcons[item.name];
+                                            const Icon = linkIcons[item.name];
                                             return (
                                                 <Link
                                                     key={item.name}
@@ -231,6 +293,7 @@ export default function Navbar() {
 
                     {/* MOBILE TOGGLE */}
                     <button
+                        ref={mobileToggleRef}
                         className="md:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
                         onClick={() => setOpen(!open)}
                     >
@@ -241,7 +304,10 @@ export default function Navbar() {
 
             {/* MOBILE MENU (NAV ONLY) */}
             {open && (
-                <div ref={mobileMenuRef} className="md:hidden bg-white border-t px-6 py-4 flex flex-col gap-3 max-h-[calc(100vh-4rem)] overflow-y-auto">
+                <div
+                    ref={mobileMenuRef}
+                    className="md:hidden bg-white border-t px-6 py-4 flex flex-col gap-3 max-h-[calc(100vh-4rem)] overflow-y-auto overscroll-contain"
+                >
                     {[...desktopNavLinks, ...mobileNavLinks].map(link => (
                         <Link
                             key={link.name}

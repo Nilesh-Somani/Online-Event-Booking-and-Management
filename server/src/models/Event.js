@@ -30,12 +30,50 @@ const scheduleSchema = new mongoose.Schema(
     { _id: false }
 );
 
-const venueSchema = new mongoose.Schema(
+const physicalLocationSchema = new mongoose.Schema(
     {
-        name: { type: String, required: true },
-        address: { type: String, required: true },
-        parking: { type: String },
-        entryNotes: { type: String },
+        venueId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Venue",
+        },
+
+        venueSnapshot: {
+            name: { type: String, required: true },
+            address: { type: String, required: true },
+            city: { type: String },
+            state: { type: String },
+            country: { type: String },
+            coordinates: {
+                lat: Number,
+                lng: Number,
+            },
+            parking: String,
+            entryNotes: String,
+        },
+    },
+    { _id: false }
+);
+
+const onlineLocationSchema = new mongoose.Schema(
+    {
+        platform: {
+            type: String, // Zoom, Google Meet, Custom
+        },
+        joinUrl: {
+            type: String,
+        },
+        accessNotes: {
+            type: String,
+        },
+    },
+    { _id: false }
+);
+
+const reviewSchema = new mongoose.Schema(
+    {
+        name: String,
+        rating: { type: Number, min: 1, max: 5 },
+        comment: String,
     },
     { _id: false }
 );
@@ -105,12 +143,18 @@ const eventSchema = new mongoose.Schema(
         },
 
         /* ================= LOCATION ================= */
-        locationName: {
-            type: String,
-            required: true,
-        },
+        location: {
+            mode: {
+                type: String,
+                enum: ["physical", "online", "hybrid"],
+                default: "physical",
+                required: true,
+            },
 
-        venue: venueSchema,
+            physical: physicalLocationSchema,
+
+            online: onlineLocationSchema,
+        },
 
         /* ================= IMAGES ================= */
         images: {
@@ -158,6 +202,23 @@ const eventSchema = new mongoose.Schema(
             default: [],
         },
 
+        rating: {
+            type: Number,
+            min: 0,
+            max: 5,
+            default: 0,
+        },
+
+        bookingsCount: {
+            type: Number,
+            default: 0,
+        },
+
+        reviews: {
+            type: [reviewSchema],
+            default: [],
+        },
+
         policies: policySchema,
 
         /* ================= ORGANIZER ================= */
@@ -166,6 +227,12 @@ const eventSchema = new mongoose.Schema(
             ref: "User",
             required: true,
             index: true,
+        },
+
+        organizerSnapshot: {
+            name: String,
+            bio: String,
+            website: String,
         },
 
         /* ================= ADMIN MODERATION ================= */
